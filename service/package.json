@@ -1,0 +1,11 @@
+{
+    "name": "@moddev-branding-site/service",
+    "version": "0.1.0",
+    "description": "Performant service that runs the website.",
+    "author": "Cheeseworks",
+    "scripts": {
+        "build": "go build -o ../build/",
+        "dev": "go run ./",
+        "start": "cd ../build && service.exe"
+    }
+}
