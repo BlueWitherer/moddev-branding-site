@@ -3,6 +3,7 @@ package access
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -32,13 +33,23 @@ type Token struct {
 
 var sessionCache = cache.New(2*time.Hour, 10*time.Minute)
 
-func generateSessionID() (string, error) {
+func generateSessionID() (string, string, error) {
 	b := make([]byte, 64)
 	if _, err := rand.Read(b); err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return base64.RawURLEncoding.EncodeToString(b), nil
+	raw := base64.RawURLEncoding.EncodeToString(b)
+
+	h := sha256.Sum256([]byte(raw))
+	hash := base64.RawURLEncoding.EncodeToString(h[:])
+
+	return raw, hash, nil
+}
+
+func hashSessionID(raw string) string {
+	h := sha256.Sum256([]byte(raw))
+	return base64.RawURLEncoding.EncodeToString(h[:])
 }
 
 func isSecure(r *http.Request) bool {
@@ -50,7 +61,7 @@ func isSecure(r *http.Request) bool {
 }
 
 func SetSession(w http.ResponseWriter, user *GitHubUser, secure bool) (string, error) {
-	sessionId, err := generateSessionID()
+	sessionId, sessionIdHash, err := generateSessionID()
 	if err != nil {
 		return "", err
 	}
@@ -76,7 +87,7 @@ func SetSession(w http.ResponseWriter, user *GitHubUser, secure bool) (string, e
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(sessionId, user.ID)
+	_, err = stmt.Exec(sessionIdHash, user.ID)
 	if err != nil {
 		return "", err
 	}
@@ -84,13 +95,15 @@ func SetSession(w http.ResponseWriter, user *GitHubUser, secure bool) (string, e
 	log.Debug("Setting session cookie...")
 	http.SetCookie(w, session)
 
-	sessionCache.Set(sessionId, user, cache.DefaultExpiration)
+	sessionCache.Set(sessionIdHash, user, cache.DefaultExpiration)
 
-	return sessionId, nil
+	return sessionIdHash, nil
 }
 
 func GetSessionFromId(id string) (*GitHubUser, error) {
-	if val, found := sessionCache.Get(id); found {
+	sessionId := hashSessionID(id)
+
+	if val, found := sessionCache.Get(sessionId); found {
 		if user, ok := val.(*GitHubUser); ok {
 			return user, nil
 		}
@@ -103,7 +116,7 @@ func GetSessionFromId(id string) (*GitHubUser, error) {
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(id).Scan(&user.ID)
+	err = stmt.QueryRow(sessionId).Scan(&user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +127,7 @@ func GetSessionFromId(id string) (*GitHubUser, error) {
 	}
 	defer updStmt.Close()
 
-	_, err = updStmt.Exec(id)
+	_, err = updStmt.Exec(sessionId)
 	if err != nil {
 		return nil, err
 	}
@@ -160,6 +173,28 @@ func GetSession(r *http.Request) (*GitHubUser, error) {
 	}
 
 	return user, nil
+}
+
+func DeleteSession(r *http.Request) (int, error) {
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		return http.StatusUnauthorized, err
+	}
+
+	stmt, err := utils.PrepareStmt(utils.Db(), "DELETE FROM sessions WHERE session_id = ?")
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(hashSessionID(cookie.Value))
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	sessionCache.Delete(hashSessionID((cookie.Value)))
+
+	return http.StatusOK, nil
 }
 
 func CleanupExpiredSessions() error {
@@ -269,10 +304,11 @@ func init() {
 	})
 
 	http.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("session_id")
-		if err == nil {
-			sessionCache.Delete(cookie.Value)
-			log.Info("User %s logged out", cookie.Value)
+		code, err := DeleteSession(r)
+		if err != nil {
+			log.Error("Failed to log out: %s")
+			http.Error(w, "Failed to log out", code)
+			return
 		}
 
 		secure := false

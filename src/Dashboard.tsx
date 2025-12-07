@@ -60,6 +60,7 @@ function Dashboard() {
     const handleLogout = () => {
         fetch("/logout", { method: "POST" })
             .then(() => {
+                console.warn("Logged out");
                 window.location.href = "/";
             })
             .catch(console.error);

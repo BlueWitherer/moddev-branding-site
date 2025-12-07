@@ -16,10 +16,12 @@ function App() {
                 if (res.ok) {
                     navigate("/dashboard");
                 } else {
+                    console.warn("User not logged in");
                     window.location.href = "/login";
                 };
             })
             .catch(() => {
+                console.warn("Session invalid");
                 window.location.href = "/login";
             });
     };
@@ -29,9 +31,13 @@ function App() {
             .then((res) => {
                 if (res.ok) {
                     navigate("/dashboard");
+                } else {
+                    console.error("User not logged in");
                 };
             })
-            .catch();
+            .catch(() => {
+                console.error("Session invalid");
+            });
     }, [navigate]);
 
     return (
