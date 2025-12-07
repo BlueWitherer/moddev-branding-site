@@ -2,6 +2,8 @@ package access
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,7 +16,6 @@ import (
 	"service/log"
 	"service/utils"
 
-	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -31,8 +32,13 @@ type Token struct {
 
 var sessionCache = cache.New(2*time.Hour, 10*time.Minute)
 
-func generateSessionID() string {
-	return uuid.New().String() // uuid v4
+func generateSessionID() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
 func isSecure(r *http.Request) bool {
@@ -44,7 +50,11 @@ func isSecure(r *http.Request) bool {
 }
 
 func SetSession(w http.ResponseWriter, user *GitHubUser, secure bool) (string, error) {
-	sessionId := generateSessionID()
+	sessionId, err := generateSessionID()
+	if err != nil {
+		return "", err
+	}
+
 	session := &http.Cookie{
 		Name:     "session_id",
 		Value:    sessionId,
