@@ -12,15 +12,13 @@ export default function NotFound() {
     };
 
     return (
-        <>
-            <div>
-                <h1 className="text-6xl mt-8 mb-4">404</h1>
-                <h6 className="text-1xl mb-4">Oops! Couldn't find that page...</h6>
+        <div className="container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh', alignItems: 'center' }}>
+            <h1 style={{ marginTop: '2rem', marginBottom: '1rem' }}>404</h1>
+            <h6 style={{ marginBottom: '1rem' }}>Oops! Couldn't find that page...</h6>
 
-                <button className="nine-slice-button" onClick={onBack}>
-                    Go Back
-                </button>
-            </div>
-        </>
+            <button onClick={onBack}>
+                Go Back
+            </button>
+        </div>
     );
 }

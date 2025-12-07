@@ -80,10 +80,12 @@ func SetSession(w http.ResponseWriter, user *GitHubUser, secure bool) (string, e
 }
 
 func GetSessionFromId(id string) (*GitHubUser, error) {
-	var user GitHubUser
 	if val, found := sessionCache.Get(id); found {
-		user = val.(GitHubUser)
+		if user, ok := val.(*GitHubUser); ok {
+			return user, nil
+		}
 	}
+	var user GitHubUser
 
 	stmt, err := utils.PrepareStmt(utils.Db(), "SELECT user_id FROM sessions WHERE session_id = ?")
 	if err != nil {

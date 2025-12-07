@@ -10,7 +10,7 @@ function App() {
     const navigate = useNavigate();
 
     return (
-        <>
+        <div className="container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh' }}>
             <div>
                 <a href='https://www.geode-sdk.org/mods/cheeseworks.moddevbranding' target="_blank">
                     <img src='/icon.png' className="logo" alt="Mod Developer Branding logo" />
@@ -23,7 +23,7 @@ function App() {
                     <GitHubIcon /> Login
                 </button>
             </div>
-        </>
+        </div>
     );
 };
 
