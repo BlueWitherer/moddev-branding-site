@@ -1,19 +1,33 @@
 export interface User {
-    id: number; // GitHub user ID
-    login: string; // GitHub username
-    avatar_url?: string; // GitHub user avatar URL
-    is_admin?: boolean; // Active administrator status
-    is_staff?: boolean; // Active staff status
-    verified?: boolean; // Trusted status
-    banned?: boolean; // Banned status
-    created_at?: string; // First created
-    updated_at?: string; // Last updated
+    /** GitHub user ID */
+    id: number;
+    /** GitHub username */
+    login: string;
+    /** GitHub user avatar URL */
+    avatar_url?: string;
+    /** Active administrator status */
+    is_admin?: boolean;
+    /** Active staff status */
+    is_staff?: boolean;
+    /** Trusted status */
+    verified?: boolean;
+    /** Banned status */
+    banned?: boolean;
+    /** First created */
+    created_at?: string;
+    /** Last updated */
+    updated_at?: string;
 };
 
 export interface Image {
+    /** Brand image ID */
     img_id: string;
+    /** GitHub user ID */
     user_id: string;
+    /** Brand image URL */
     image_url: string;
+    /** First created */
     created_at?: string;
+    /** Under review */
     pending?: boolean;
 };

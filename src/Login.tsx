@@ -17,7 +17,7 @@ function App() {
                     navigate("/dashboard");
                 } else {
                     window.location.href = "/login";
-                }
+                };
             })
             .catch(() => {
                 window.location.href = "/login";
@@ -29,7 +29,7 @@ function App() {
             .then((res) => {
                 if (res.ok) {
                     navigate("/dashboard");
-                }
+                };
             })
             .catch();
     }, [navigate]);
