@@ -33,7 +33,7 @@ type Token struct {
 var sessionCache = cache.New(2*time.Hour, 10*time.Minute)
 
 func generateSessionID() (string, error) {
-	b := make([]byte, 32)
+	b := make([]byte, 64)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
