@@ -7,8 +7,12 @@ import { useNavigate } from "react-router-dom";
 import type { User } from "./Include.mts";
 import { Avatar, Box, Tabs, Tab, Typography, IconButton } from "@mui/material";
 
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import LogoutIcon from '@mui/icons-material/Logout';
+
+import Overview from "./tabs/Overview";
+import Submission from "./tabs/Submission";
+import Pending from "./tabs/Pending";
+import Settings from "./tabs/Settings";
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -56,7 +60,7 @@ function Dashboard() {
     const handleLogout = () => {
         fetch("/logout", { method: "POST" })
             .then(() => {
-                navigate("/");
+                window.location.href = "/";
             })
             .catch(console.error);
     };
@@ -73,20 +77,26 @@ function Dashboard() {
                     console.info(`Logged in as GitHub user ${u.login}!`);
                 } else {
                     console.error("Invalid user");
-                    navigate("/login");
+                    window.location.href = "/login";
                 };
             })
             .catch((err: unknown) => {
                 console.error(err);
-                navigate("/");
+                window.location.href = "/login";
             });
     }, [navigate]);
 
     return (
         <>
-            <Box sx={{ width: '100%', bgcolor: 'rgba(0, 0, 0, 0.5)' }}>
+            <Box sx={{ width: '100%', bgcolor: 'rgba(0, 0, 0, 0.5)', position: 'relative' }}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'center' }}>
-                    <Tabs value={tabValue} onChange={handleTabChange} aria-label="dashboard tabs" centered>
+                    <Tabs
+                        value={tabValue}
+                        onChange={handleTabChange}
+                        aria-label="dashboard tabs"
+                        centered
+                        className="custom-tabs"
+                    >
                         <Tab label="Dashboard" {...a11yProps(0)} />
                         <Tab label="Submission" {...a11yProps(1)} />
                         <Tab label="Pending" {...a11yProps(2)} />
@@ -96,29 +106,16 @@ function Dashboard() {
             </Box>
 
             <CustomTabPanel value={tabValue} index={0}>
-                <div className="container">
-                    <h4>Hello, {user?.login}!</h4>
-                    <p>Here's where you'll soon be able to manage your Geode mod developer branding!</p>
-                    <AutoFixHighIcon fontSize="large" />
-                </div>
+                <Overview user={user} />
             </CustomTabPanel>
             <CustomTabPanel value={tabValue} index={1}>
-                <div className="container">
-                    <Typography variant="h5">Submission</Typography>
-                    <p>Content coming soon...</p>
-                </div>
+                <Submission />
             </CustomTabPanel>
             <CustomTabPanel value={tabValue} index={2}>
-                <div className="container">
-                    <Typography variant="h5">Pending</Typography>
-                    <p>Content coming soon...</p>
-                </div>
+                <Pending />
             </CustomTabPanel>
             <CustomTabPanel value={tabValue} index={3}>
-                <div className="container">
-                    <Typography variant="h5">Settings</Typography>
-                    <p>Content coming soon...</p>
-                </div>
+                <Settings />
             </CustomTabPanel>
 
             <Box sx={{
@@ -137,8 +134,8 @@ function Dashboard() {
                 <Typography variant="body1" sx={{ color: 'white', fontWeight: 'bold' }}>
                     {user?.login}
                 </Typography>
-                <IconButton 
-                    color="error" 
+                <IconButton
+                    color="error"
                     onClick={handleLogout}
                     title="Logout"
                 >

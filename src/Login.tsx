@@ -1,6 +1,6 @@
 import "./Log.mts";
 
-import './App.css';
+import './index.css';
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +9,20 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 
 function App() {
     const navigate = useNavigate();
+
+    const handleLogin = () => {
+        fetch("/session", { credentials: "include" })
+            .then((res) => {
+                if (res.ok) {
+                    navigate("/dashboard");
+                } else {
+                    window.location.href = "/login";
+                }
+            })
+            .catch(() => {
+                window.location.href = "/login";
+            });
+    };
 
     useEffect(() => {
         fetch("/session", { credentials: "include" })
@@ -21,7 +35,7 @@ function App() {
     }, [navigate]);
 
     return (
-        <div className="container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh' }}>
+        <div className="container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', textAlign: 'center' }}>
             <div>
                 <a href='https://www.geode-sdk.org/mods/cheeseworks.moddevbranding' target="_blank">
                     <img src='/icon.png' className="logo" alt="Mod Developer Branding logo" />
@@ -30,7 +44,7 @@ function App() {
             <h1>Mod Developer Branding</h1>
             <p>Add your branding to Geode's mod information popups in-game!</p>
             <div>
-                <button onClick={() => navigate('/dashboard')}>
+                <button onClick={handleLogin}>
                     <GitHubIcon /> Login
                 </button>
             </div>
