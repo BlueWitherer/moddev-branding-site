@@ -2,12 +2,23 @@ import "./Log.mts";
 
 import './App.css';
 
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import GitHubIcon from '@mui/icons-material/GitHub';
 
 function App() {
     const navigate = useNavigate();
+
+    useEffect(() => {
+        fetch("/session", { credentials: "include" })
+            .then((res) => {
+                if (res.ok) {
+                    navigate("/dashboard");
+                }
+            })
+            .catch();
+    }, [navigate]);
 
     return (
         <div className="container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh' }}>
