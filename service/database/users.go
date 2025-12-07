@@ -80,7 +80,7 @@ func GetUser(id int64) (*utils.User, error) {
 	user := new(utils.User)
 	err = stmt.QueryRow(id).Scan(
 		&user.ID,
-		&user.Username,
+		&user.Login,
 		&user.AvatarURL,
 		&user.IsAdmin,
 		&user.IsStaff,
@@ -125,7 +125,7 @@ func GetAllUsers() ([]*utils.User, error) {
 		u := new(utils.User)
 		if err := users.Scan(
 			&u.ID,
-			&u.Username,
+			&u.Login,
 			&u.AvatarURL,
 			&u.IsAdmin,
 			&u.IsStaff,
@@ -145,19 +145,19 @@ func GetAllUsers() ([]*utils.User, error) {
 	return out, users.Err()
 }
 
-// inserts a new user or updates username if it alreimgy exists.
-func UpsertUser(id int64, login string, username string, avatarUrl string) error {
+// inserts a new user or updates login if it already exists.
+func UpsertUser(id int64, login string, avatarUrl string) error {
 	if id == 0 {
 		return fmt.Errorf("empty user id")
 	}
 
-	stmt, err := utils.PrepareStmt(dat, "INSERT INTO users (id, username, avatar_url) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE username = VALUES (username), avatar_url = VALUES (avatar_url), updated_at = CURRENT_TIMESTAMP")
+	stmt, err := utils.PrepareStmt(dat, "INSERT INTO users (id, login, avatar_url) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE login = VALUES (login), avatar_url = VALUES (avatar_url), updated_at = CURRENT_TIMESTAMP")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(id, username, avatarUrl)
+	_, err = stmt.Exec(id, login, avatarUrl)
 	return err
 }
 
@@ -211,7 +211,6 @@ func BanUser(id int64) (*utils.User, error) {
 		if err := rows.Scan(
 			&r.ImgID,
 			&r.UserID,
-			&r.Type,
 			&r.ImageURL,
 			&r.Created,
 			&r.Pending,

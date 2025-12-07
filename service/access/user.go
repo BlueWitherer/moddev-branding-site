@@ -21,7 +21,6 @@ import (
 type GitHubUser struct {
 	ID        int64  `json:"id"`
 	Login     string `json:"login"`
-	Username  string `json:"name"`
 	AvatarURL string `json:"avatar_url"`
 }
 
@@ -113,7 +112,7 @@ func GetSessionFromId(id string) (*GitHubUser, error) {
 		return nil, err
 	}
 
-	user.Username = u.Username
+	user.Login = u.Login
 	user.AvatarURL = u.AvatarURL
 
 	return &user, nil
@@ -239,7 +238,6 @@ func init() {
 		if err := database.UpsertUser(
 			user.ID,
 			user.Login,
-			user.Username,
 			user.AvatarURL,
 		); err != nil {
 			log.Error("Failed to upsert user: %s", err.Error())
@@ -284,5 +282,40 @@ func init() {
 
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "Logged out successfully")
+	})
+
+	http.HandleFunc("/session", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			if c, err := r.Cookie("session_id"); err == nil {
+				log.Debug("/session request cookie: %s", c.Value)
+			} else {
+				log.Debug("/session request no cookie: %s", err.Error())
+			}
+
+			user, err := GetSession(r)
+			if err != nil {
+				log.Error(err.Error())
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			header := w.Header()
+
+			header.Set("Content-Type", "application/json")
+			if jb, err := json.Marshal(user); err == nil {
+				log.Debug("/session returning user: %s", string(jb))
+			} else {
+				log.Debug("/session returning user: (failed to marshal)")
+			}
+
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(user); err != nil {
+				log.Error("Failed to encode response: %s", err.Error())
+				http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
 	})
 }
