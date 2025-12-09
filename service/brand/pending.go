@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	http.HandleFunc("/ads/pending", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/brand/pending", func(w http.ResponseWriter, r *http.Request) {
 		header := w.Header()
 
 		header.Set("Access-Control-Allow-Origin", "*")
@@ -41,11 +41,11 @@ func init() {
 				return
 			}
 
-			// Get pending ads directly from database with WHERE pending != 0
-			adList, err := database.ListPendingImages()
+			// Get pending images directly from database with WHERE pending != 0
+			imgList, err := database.ListPendingImages()
 			if err != nil {
-				log.Error("Failed to list pending ads: %s", err.Error())
-				http.Error(w, "Failed to list pending ads", http.StatusInternalServerError)
+				log.Error("Failed to list pending images: %s", err.Error())
+				http.Error(w, "Failed to list pending images", http.StatusInternalServerError)
 				return
 			}
 
@@ -59,17 +59,17 @@ func init() {
 				return
 			}
 
-			adList, err = database.FilterImagesByUser(adList, user)
+			imgList, err = database.FilterImagesByUser(imgList, user)
 			if err != nil {
-				log.Error("Failed to filter ads by user: %s", err.Error())
-				http.Error(w, "Failed to filter ads", http.StatusInternalServerError)
+				log.Error("Failed to filter images by user: %s", err.Error())
+				http.Error(w, "Failed to filter images", http.StatusInternalServerError)
 				return
 			}
 
-			log.Debug("Returning %d pending advertisements", len(adList))
+			log.Debug("Returning %d pending advertisements", len(imgList))
 
 			w.WriteHeader(http.StatusOK)
-			if err := json.NewEncoder(w).Encode(adList); err != nil {
+			if err := json.NewEncoder(w).Encode(imgList); err != nil {
 				log.Error("Failed to encode response: %s", err.Error())
 				http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 				return
@@ -79,7 +79,7 @@ func init() {
 		}
 	})
 
-	http.HandleFunc("/ads/pending/accept", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/brand/pending/accept", func(w http.ResponseWriter, r *http.Request) {
 		header := w.Header()
 
 		header.Set("Access-Control-Allow-Origin", "*")
