@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"service/access"
+	_ "service/api"
+	_ "service/brand"
 	"service/log"
 
 	"github.com/patrickmn/go-cache"
@@ -94,7 +96,7 @@ func main() {
 		header := w.Header()
 
 		requestedPath := strings.TrimPrefix(r.URL.Path, "/cdn/")
-		fullPath := filepath.Join("..", "images", requestedPath)
+		fullPath := filepath.Join("..", "cdn", requestedPath)
 
 		header.Set("Content-Type", "image/webp")
 
@@ -102,18 +104,6 @@ func main() {
 	})
 
 	log.Debug("Starting handlers...")
-	http.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-		log.Info("Server pinged!")
-		header := w.Header()
-
-		header.Set("Access-Control-Allow-Origin", "*")
-		header.Set("Access-Control-Allow-Methods", "GET")
-		header.Set("Access-Control-Allow-Headers", "Content-Type")
-		header.Set("Content-Type", "text/plain")
-
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "pong!")
-	})
 
 	go func() {
 		defer func() {
