@@ -21,7 +21,7 @@ export interface User {
 
 export interface Image {
     /** Brand image ID */
-    img_id: string;
+    id: string;
     /** GitHub user ID */
     user_id: string;
     /** Brand image URL */

@@ -5,7 +5,7 @@ import (
 )
 
 type User struct {
-	ID        int64     `json:"id"`         // GitHub user ID
+	ID        uint64    `json:"id"`         // GitHub user ID
 	Login     string    `json:"login"`      // GitHub username
 	AvatarURL string    `json:"avatar_url"` // GitHub user avatar URL
 	IsAdmin   bool      `json:"is_admin"`   // Active administrator status

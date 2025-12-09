@@ -21,7 +21,7 @@ import (
 )
 
 type GitHubUser struct {
-	ID        int64  `json:"id"`
+	ID        uint64 `json:"id"`
 	Login     string `json:"login"`
 	AvatarURL string `json:"avatar_url"`
 }
@@ -143,7 +143,7 @@ func GetSessionFromId(id string) (*GitHubUser, error) {
 	return &user, nil
 }
 
-func GetSessionUserID(r *http.Request) (int64, error) {
+func GetSessionUserID(r *http.Request) (uint64, error) {
 	c, err := r.Cookie("session_id")
 	if err != nil {
 		return 0, err

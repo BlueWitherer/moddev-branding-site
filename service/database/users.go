@@ -29,10 +29,22 @@ func getUsers() *[]*utils.User {
 	return newUsers()
 }
 
-func findUser(id int64) (*utils.User, bool) {
+func findUser(id uint64) (*utils.User, bool) {
 	if currentUsers != nil {
 		for _, u := range *currentUsers {
 			if u.ID == id {
+				return u, true
+			}
+		}
+	}
+
+	return nil, false
+}
+
+func findUserByLogin(login string) (*utils.User, bool) {
+	if currentUsers != nil {
+		for _, u := range *currentUsers {
+			if u.Login == login {
 				return u, true
 			}
 		}
@@ -50,7 +62,7 @@ func setUser(user *utils.User) *[]*utils.User {
 	return getUsers()
 }
 
-func deleteUser(id int64) *[]*utils.User {
+func deleteUser(id uint64) *[]*utils.User {
 	if currentUsers != nil {
 		for i, u := range *currentUsers {
 			if u.ID == id {
@@ -62,7 +74,7 @@ func deleteUser(id int64) *[]*utils.User {
 	return getUsers()
 }
 
-func GetUser(id int64) (*utils.User, error) {
+func GetUser(id uint64) (*utils.User, error) {
 	if id == 0 {
 		return nil, fmt.Errorf("empty user id")
 	}
@@ -79,6 +91,42 @@ func GetUser(id int64) (*utils.User, error) {
 
 	user := new(utils.User)
 	err = stmt.QueryRow(id).Scan(
+		&user.ID,
+		&user.Login,
+		&user.AvatarURL,
+		&user.IsAdmin,
+		&user.IsStaff,
+		&user.Verified,
+		&user.Banned,
+		&user.Created,
+		&user.Updated,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	currentUsers = setUser(user)
+
+	return user, nil
+}
+
+func GetUserFromLogin(login string) (*utils.User, error) {
+	if login == "" {
+		return nil, fmt.Errorf("empty user id")
+	}
+
+	if val, found := findUserByLogin(login); found {
+		return val, nil
+	}
+
+	stmt, err := utils.PrepareStmt(dat, "SELECT * FROM users WHERE login = ?")
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	user := new(utils.User)
+	err = stmt.QueryRow(login).Scan(
 		&user.ID,
 		&user.Login,
 		&user.AvatarURL,
@@ -146,7 +194,7 @@ func GetAllUsers() ([]*utils.User, error) {
 }
 
 // inserts a new user or updates login if it already exists.
-func UpsertUser(id int64, login string, avatarUrl string) error {
+func UpsertUser(id uint64, login string, avatarUrl string) error {
 	if id == 0 {
 		return fmt.Errorf("empty user id")
 	}
@@ -161,7 +209,7 @@ func UpsertUser(id int64, login string, avatarUrl string) error {
 	return err
 }
 
-func VerifyUser(id int64) (*utils.User, error) {
+func VerifyUser(id uint64) (*utils.User, error) {
 	stmt, err := utils.PrepareStmt(dat, "UPDATE users SET verified = TRUE WHERE id = ?")
 	if err != nil {
 		return nil, err
@@ -176,7 +224,7 @@ func VerifyUser(id int64) (*utils.User, error) {
 	return GetUser(id)
 }
 
-func StaffUser(id int64) (*utils.User, error) {
+func StaffUser(id uint64) (*utils.User, error) {
 	stmt, err := utils.PrepareStmt(dat, "UPDATE users SET is_staff = TRUE WHERE id = ?")
 	if err != nil {
 		return nil, err
@@ -191,7 +239,7 @@ func StaffUser(id int64) (*utils.User, error) {
 	return GetUser(id)
 }
 
-func BanUser(id int64) (*utils.User, error) {
+func BanUser(id uint64) (*utils.User, error) {
 	// delete all images associated with the user
 	deleteImgsStmt, err := utils.PrepareStmt(dat, "SELECT * FROM images WHERE user_id = ?")
 	if err != nil {
@@ -199,34 +247,16 @@ func BanUser(id int64) (*utils.User, error) {
 	}
 	defer deleteImgsStmt.Close()
 
-	rows, err := deleteImgsStmt.Query(id)
+	img := new(utils.Img)
+	err = deleteImgsStmt.QueryRow(id).Scan(&img.ID, &img.UserID, &img.ImageURL, &img.Created, &img.Pending)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	imgs := make([]utils.Img, 0)
-	for rows.Next() {
-		var r utils.Img
-		if err := rows.Scan(
-			&r.ImgID,
-			&r.UserID,
-			&r.ImageURL,
-			&r.Created,
-			&r.Pending,
-		); err != nil {
-			return nil, err
-		}
-
-		imgs = append(imgs, r)
-	}
-
-	for _, a := range imgs {
-		imgDir := filepath.Join("..", "cdn", fmt.Sprintf("%s-%d.webp", a.UserID, a.ImgID))
-		err = os.Remove(imgDir)
-		if err != nil {
-			return nil, err
-		}
+	imgDir := filepath.Join("..", "cdn", fmt.Sprintf("%d.webp", img.UserID))
+	err = os.Remove(imgDir)
+	if err != nil {
+		return nil, err
 	}
 
 	user, err := GetUser(id)
@@ -251,7 +281,7 @@ func BanUser(id int64) (*utils.User, error) {
 	return user, nil
 }
 
-func UnbanUser(id int64) (*utils.User, error) {
+func UnbanUser(id uint64) (*utils.User, error) {
 	// unban the user
 	stmt, err := utils.PrepareStmt(dat, "UPDATE users SET banned = FALSE WHERE id = ?")
 	if err != nil {
