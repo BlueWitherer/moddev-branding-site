@@ -21,9 +21,6 @@ function Settings({ user }: SettingsProps) {
                         <Typography variant="body1">
                             <strong>User ID:</strong> {user?.id}
                         </Typography>
-                        <Typography variant="body1">
-                            <strong>Registered on:</strong> {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-                        </Typography>
                     </Box>
                 </Box>
             </Paper>

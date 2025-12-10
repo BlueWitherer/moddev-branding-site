@@ -21,9 +21,15 @@ import (
 )
 
 type GitHubUser struct {
-	ID        uint64 `json:"id"`
-	Login     string `json:"login"`
-	AvatarURL string `json:"avatar_url"`
+	ID        uint64    `json:"id"`
+	Login     string    `json:"login"`
+	AvatarURL string    `json:"avatar_url"`
+	IsAdmin   bool      `json:"is_admin"`
+	IsStaff   bool      `json:"is_staff"`
+	Verified  bool      `json:"verified"`
+	Banned    bool      `json:"banned"`
+	Created   time.Time `json:"created_at"`
+	Updated   time.Time `json:"updated_at"`
 }
 
 type Token struct {
@@ -139,7 +145,12 @@ func GetSessionFromId(id string) (*GitHubUser, error) {
 
 	user.Login = u.Login
 	user.AvatarURL = u.AvatarURL
-
+	user.IsAdmin = u.IsAdmin
+	user.IsStaff = u.IsStaff
+	user.Verified = u.Verified
+	user.Banned = u.Banned
+	user.Created = u.Created
+	user.Updated = u.Updated
 	return &user, nil
 }
 
