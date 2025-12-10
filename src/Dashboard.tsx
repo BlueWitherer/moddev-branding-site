@@ -5,7 +5,9 @@ import type { SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { User } from "./Include.mts";
-import { Avatar, Box, Tabs, Tab, Typography, IconButton, useTheme, useMediaQuery, Select, MenuItem, FormControl } from "@mui/material";
+import { Avatar, Box, Tabs, Tab, Typography, IconButton, useTheme, useMediaQuery, Select, MenuItem, FormControl, Button, Dialog, DialogTitle, DialogContent } from "@mui/material";
+
+
 import type { SelectChangeEvent } from "@mui/material";
 
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -94,6 +96,11 @@ function Dashboard() {
             });
     }, [navigate]);
 
+    const [creditsOpen, setCreditsOpen] = useState(false);
+
+    const handleOpenCredits = () => setCreditsOpen(true);
+    const handleCloseCredits = () => setCreditsOpen(false);
+
     const showPending = user?.is_admin || user?.is_staff;
 
     return (
@@ -162,7 +169,7 @@ function Dashboard() {
                 alignItems: 'center',
                 gap: 2,
                 zIndex: 1000,
-                width: isMobile ? 'calc(100% - 40px)' : 'auto',
+                width: isMobile ? 'calc(100% - 120px)' : 'auto', // Reduced width on mobile to make space for credits button
                 maxWidth: '100%',
                 boxSizing: 'border-box'
             }}>
@@ -186,6 +193,98 @@ function Dashboard() {
                     <LogoutIcon />
                 </IconButton>
             </Box>
+
+            {/* Credits Button */}
+            <Box
+                sx={{
+                    position: 'fixed',
+                    bottom: 20,
+                    right: 20,
+                    zIndex: 1000,
+                }}
+            >
+                <Button
+                    onClick={handleOpenCredits}
+                    sx={{
+                        bgcolor: 'rgba(0, 0, 0, 0.8)',
+                        backdropFilter: 'blur(10px)',
+                        color: 'white',
+                        '&:hover': {
+                            bgcolor: 'rgba(0, 0, 0, 0.9)',
+                        },
+                        borderRadius: '24px', // Squircle shape
+                        width: '72px',
+                        height: '72px',
+                        minWidth: 0,
+                        p: 0,
+                        fontWeight: 'bold',
+                        fontSize: '0.75rem',
+                    }}
+                >
+                    CREDITS
+                </Button>
+            </Box>
+
+            {/* Credits Modal */}
+            <Dialog
+                open={creditsOpen}
+                onClose={handleCloseCredits}
+                aria-labelledby="credits-modal-title"
+                aria-describedby="credits-modal-description"
+                slotProps={{
+                    paper: {
+                        sx: {
+                            bgcolor: 'rgba(20, 20, 20, 0.95)', // Dark background
+                            border: '2px solid rgba(253, 128, 236, 1)',
+                            boxShadow: 24,
+                            borderRadius: 2,
+                            color: 'white',
+                            width: isMobile ? '80%' : 500,
+                            maxWidth: 'none', // Allow custom width
+                        }
+                    }
+                }}
+            >
+                <DialogTitle id="credits-modal-title" sx={{ mb: 1, color: 'rgba(253, 128, 236, 1)', fontFamily: "'Russo One', sans-serif", textAlign: 'center' }}>
+                    Credits
+                </DialogTitle>
+
+                <DialogContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', mt: 1 }}>
+                        {/* ArcticWoof */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Avatar
+                                src="https://avatars.githubusercontent.com/u/56347227"
+                                sx={{ width: '70%', height: '70%', mb: 1, cursor: 'pointer' }}
+                                onClick={() => window.open("https://github.com/DumbCaveSpider", "_blank")}
+                            />
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>ArcticWoof</Typography>
+                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                Frontend/UI/UX
+                            </Typography>
+                        </Box>
+
+                        {/* Cheeseworks */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Avatar
+                                src="https://avatars.githubusercontent.com/u/47698640"
+                                sx={{ width: '70%', height: '70%', mb: 1, cursor: 'pointer' }}
+                                onClick={() => window.open("https://github.com/BlueWitherer", "_blank")}
+                            />
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Cheeseworks</Typography>
+                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                Backend/API
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                Geode Mod
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Button variant="contained" color="error" onClick={handleCloseCredits} sx={{ mt: 2, width: '100%' }}>
+                        Close
+                    </Button>
+                </DialogContent>
+            </Dialog>
         </>
     );
 };
