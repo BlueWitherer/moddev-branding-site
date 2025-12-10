@@ -53,7 +53,7 @@ function Submission() {
     return (
         <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
             <Typography variant="h4" gutterBottom sx={{ mb: 4, textAlign: 'center', fontFamily: "'Russo One', sans-serif" }}>
-                Submit Branding
+                Submit Mod Branding
             </Typography>
 
             <Paper sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, bgcolor: 'rgba(0,0,0,0.4)', color: 'white' }}>
@@ -115,10 +115,10 @@ function Submission() {
                                 alt="Preview"
                                 style={{
                                     position: 'absolute',
-                                    top: '18%',
-                                    left: '38%',
-                                    width: '60%',
-                                    height: '78%',
+                                    top: '14%',
+                                    left: '37%',
+                                    width: '60.8%',
+                                    height: '82.5%',
                                     objectFit: 'contain',
                                     opacity: 0.2
                                 }}
@@ -156,14 +156,16 @@ function Submission() {
                 onClose={() => setOpenPreview(false)}
                 maxWidth="lg"
                 fullWidth
-                PaperProps={{
-                    sx: {
-                        bgcolor: 'transparent',
-                        boxShadow: 'none',
-                        overflow: 'hidden',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
+                slotProps={{
+                    paper: {
+                        sx: {
+                            bgcolor: 'transparent',
+                            boxShadow: 'none',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }
                     }
                 }}
             >
@@ -178,10 +180,10 @@ function Submission() {
                         alt="Full Preview"
                         style={{
                             position: 'absolute',
-                            top: '18%',
-                            left: '38%',
-                            width: '60%',
-                            height: '78%',
+                            top: '14%',
+                            left: '37%',
+                            width: '60.8%',
+                            height: '82.5%',
                             objectFit: 'contain',
                             opacity: 0.2
                         }}
