@@ -1,5 +1,5 @@
 import type { User } from "../Include.mts";
-import { Avatar, Box, Paper, Typography } from "@mui/material";
+import { Box, Paper, Typography } from "@mui/material";
 
 interface OverviewProps {
     user: User | null;
