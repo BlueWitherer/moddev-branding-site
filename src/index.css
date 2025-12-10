@@ -190,3 +190,48 @@ button:focus-visible {
 .custom-tabs .Mui-selected {
     color: rgb(253, 128, 241) !important;
 }
+
+/* Dashboard Mobile Dropdown Styling */
+.dashboard-select {
+    color: white !important;
+    text-align: center !important;
+}
+
+.dashboard-select .MuiSelect-select {
+    text-align: center;
+}
+
+.dashboard-select .MuiSelect-icon {
+    color: white !important;
+}
+
+.dashboard-select .MuiOutlinedInput-notchedOutline {
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.dashboard-select:hover .MuiOutlinedInput-notchedOutline {
+    border-color: white !important;
+}
+
+.dashboard-select.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: rgb(253, 128, 241) !important;
+}
+
+/* Menu Popup Styling */
+.dashboard-menu-paper {
+    background-color: rgba(20, 20, 20, 0.95) !important;
+    color: white !important;
+    backdrop-filter: blur(10px);
+}
+
+.dashboard-menu-paper .MuiMenuItem-root:hover {
+    background-color: rgba(253, 128, 241, 0.1) !important;
+}
+
+.dashboard-menu-paper .MuiMenuItem-root.Mui-selected {
+    background-color: rgba(253, 128, 241, 0.2) !important;
+}
+
+.dashboard-menu-paper .MuiMenuItem-root.Mui-selected:hover {
+    background-color: rgba(253, 128, 241, 0.3) !important;
+}

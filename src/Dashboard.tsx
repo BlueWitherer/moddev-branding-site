@@ -94,6 +94,8 @@ function Dashboard() {
             });
     }, [navigate]);
 
+    const showPending = user?.is_admin || user?.is_staff;
+
     return (
         <>
             <Box sx={{ width: '100%', bgcolor: 'rgba(0, 0, 0, 0.5)', position: 'relative' }}>
@@ -104,17 +106,16 @@ function Dashboard() {
                                 value={tabValue}
                                 onChange={handleSelectChange}
                                 label="Navigation"
-                                sx={{
-                                    color: 'white',
-                                    '.MuiSelect-icon': { color: 'white' },
-                                    '&:before': { borderColor: 'rgba(255, 255, 255, 0.5)' },
-                                    '&:after': { borderColor: 'rgb(253, 128, 241)' },
-                                    textAlign: 'center'
+                                className="dashboard-select"
+                                MenuProps={{
+                                    PaperProps: {
+                                        className: 'dashboard-menu-paper'
+                                    }
                                 }}
                             >
                                 <MenuItem value={0}>Dashboard</MenuItem>
                                 <MenuItem value={1}>Submission</MenuItem>
-                                <MenuItem value={2}>Pending</MenuItem>
+                                {showPending && <MenuItem value={2}>Pending</MenuItem>}
                                 <MenuItem value={3}>Settings</MenuItem>
                             </Select>
                         </FormControl>
@@ -126,10 +127,10 @@ function Dashboard() {
                             centered
                             className="custom-tabs"
                         >
-                            <Tab label="Dashboard" {...a11yProps(0)} />
-                            <Tab label="Submission" {...a11yProps(1)} />
-                            <Tab label="Pending" {...a11yProps(2)} />
-                            <Tab label="Settings" {...a11yProps(3)} />
+                            <Tab label="Dashboard" value={0} {...a11yProps(0)} />
+                            <Tab label="Submission" value={1} {...a11yProps(1)} />
+                            {showPending && <Tab label="Pending" value={2} {...a11yProps(2)} />}
+                            <Tab label="Settings" value={3} {...a11yProps(3)} />
                         </Tabs>
                     )}
                 </Box>
@@ -141,9 +142,11 @@ function Dashboard() {
             <CustomTabPanel value={tabValue} index={1}>
                 <Submission />
             </CustomTabPanel>
-            <CustomTabPanel value={tabValue} index={2}>
-                <Pending />
-            </CustomTabPanel>
+            {showPending && (
+                <CustomTabPanel value={tabValue} index={2}>
+                    <Pending />
+                </CustomTabPanel>
+            )}
             <CustomTabPanel value={tabValue} index={3}>
                 <Settings />
             </CustomTabPanel>
