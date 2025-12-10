@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"service/database"
 	"service/log"
@@ -42,8 +43,35 @@ func init() {
 
 			user, err := database.GetUserFromLogin(dev)
 			if err != nil {
-				log.Error("Failed to get user: %s", err.Error())
-				http.Error(w, "Failed to get user", http.StatusInternalServerError)
+				log.Warn("Failed to get user: %s", err.Error())
+
+				devLower := strings.ToLower(dev)
+				githubURL := fmt.Sprintf(
+					"https://raw.githubusercontent.com/Alphalaneous/ModDevBranding-Images/refs/heads/main/Images/%s.png",
+					devLower,
+				)
+
+				resp, err := http.Get(githubURL)
+				if err != nil || resp.StatusCode != http.StatusOK {
+					log.Error("Failed to fetch fallback image: %v", err)
+					http.Error(w, "Image not found", http.StatusNotFound)
+					return
+				}
+				defer resp.Body.Close()
+
+				if fmtParam == "webp" {
+					header.Set("Content-Type", "image/webp")
+				} else {
+					header.Set("Content-Type", "image/png")
+				}
+
+				w.WriteHeader(http.StatusOK)
+				if _, err := io.Copy(w, resp.Body); err != nil {
+					log.Error("Failed to stream fallback image: %v", err)
+					http.Error(w, "Failed to stream image", http.StatusInternalServerError)
+					return
+				}
+
 				return
 			}
 
