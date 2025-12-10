@@ -5,7 +5,8 @@ import type { SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { User } from "./Include.mts";
-import { Avatar, Box, Tabs, Tab, Typography, IconButton } from "@mui/material";
+import { Avatar, Box, Tabs, Tab, Typography, IconButton, useTheme, useMediaQuery, Select, MenuItem, FormControl } from "@mui/material";
+import type { SelectChangeEvent } from "@mui/material";
 
 import LogoutIcon from '@mui/icons-material/Logout';
 
@@ -32,7 +33,7 @@ function CustomTabPanel(props: TabPanelProps) {
             {...other}
         >
             {value === index && (
-                <Box sx={{ p: 3 }}>
+                <Box sx={{ p: { xs: 2, md: 3 } }}>
                     {children}
                 </Box>
             )}
@@ -49,12 +50,18 @@ function a11yProps(index: number) {
 
 function Dashboard() {
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const [user, setUser] = useState<User | null>(null);
     const [tabValue, setTabValue] = useState(0);
 
     const handleTabChange = (_event: SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
+    };
+
+    const handleSelectChange = (event: SelectChangeEvent<number>) => {
+        setTabValue(Number(event.target.value));
     };
 
     const handleLogout = () => {
@@ -90,19 +97,41 @@ function Dashboard() {
     return (
         <>
             <Box sx={{ width: '100%', bgcolor: 'rgba(0, 0, 0, 0.5)', position: 'relative' }}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'center' }}>
-                    <Tabs
-                        value={tabValue}
-                        onChange={handleTabChange}
-                        aria-label="dashboard tabs"
-                        centered
-                        className="custom-tabs"
-                    >
-                        <Tab label="Dashboard" {...a11yProps(0)} />
-                        <Tab label="Submission" {...a11yProps(1)} />
-                        <Tab label="Pending" {...a11yProps(2)} />
-                        <Tab label="Settings" {...a11yProps(3)} />
-                    </Tabs>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'center', p: isMobile ? 2 : 0 }}>
+                    {isMobile ? (
+                        <FormControl fullWidth >
+                            <Select
+                                value={tabValue}
+                                onChange={handleSelectChange}
+                                label="Navigation"
+                                sx={{
+                                    color: 'white',
+                                    '.MuiSelect-icon': { color: 'white' },
+                                    '&:before': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+                                    '&:after': { borderColor: 'rgb(253, 128, 241)' },
+                                    textAlign: 'center'
+                                }}
+                            >
+                                <MenuItem value={0}>Dashboard</MenuItem>
+                                <MenuItem value={1}>Submission</MenuItem>
+                                <MenuItem value={2}>Pending</MenuItem>
+                                <MenuItem value={3}>Settings</MenuItem>
+                            </Select>
+                        </FormControl>
+                    ) : (
+                        <Tabs
+                            value={tabValue}
+                            onChange={handleTabChange}
+                            aria-label="dashboard tabs"
+                            centered
+                            className="custom-tabs"
+                        >
+                            <Tab label="Dashboard" {...a11yProps(0)} />
+                            <Tab label="Submission" {...a11yProps(1)} />
+                            <Tab label="Pending" {...a11yProps(2)} />
+                            <Tab label="Settings" {...a11yProps(3)} />
+                        </Tabs>
+                    )}
                 </Box>
             </Box>
 
@@ -129,10 +158,21 @@ function Dashboard() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 2,
-                zIndex: 1000
+                zIndex: 1000,
+                width: isMobile ? 'calc(100% - 40px)' : 'auto',
+                maxWidth: '100%',
+                boxSizing: 'border-box'
             }}>
                 <Avatar src={user?.avatar_url} />
-                <Typography variant="body1" sx={{ color: 'white', fontWeight: 'bold' }}>
+                <Typography variant="body1" sx={{
+                    color: 'white',
+                    fontWeight: 'bold',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    flexGrow: 1,
+                    minWidth: 0
+                }}>
                     {user?.login}
                 </Typography>
                 <IconButton
