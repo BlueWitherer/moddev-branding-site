@@ -148,7 +148,7 @@ function Dashboard() {
                 </CustomTabPanel>
             )}
             <CustomTabPanel value={tabValue} index={3}>
-                <Settings />
+                <Settings user={user} />
             </CustomTabPanel>
 
             <Box sx={{
