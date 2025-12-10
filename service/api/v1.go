@@ -38,6 +38,7 @@ func init() {
 
 			query := r.URL.Query()
 			dev := query.Get("dev")
+			fmtParam := query.Get("fmt")
 
 			user, err := database.GetUserFromLogin(dev)
 			if err != nil {
@@ -60,7 +61,9 @@ func init() {
 			}
 
 			fileName := fmt.Sprintf("%d.webp", user.ID)
-			dstPath := filepath.Join(filepath.Join("..", "cdn"), fileName)
+			dstPath := filepath.Join("..", "cdn", fileName)
+
+			log.Info("Getting brand image %s for %s", dstPath, user.Login)
 
 			f, err := os.Open(dstPath)
 			if err != nil {
@@ -70,11 +73,24 @@ func init() {
 			}
 			defer f.Close()
 
-			w.WriteHeader(http.StatusOK)
-			if _, err := io.Copy(w, f); err != nil {
-				log.Error("Failed to stream image: %s", err.Error())
-				http.Error(w, "Failed to stream image", http.StatusInternalServerError)
-				return
+			if fmtParam == "webp" {
+				header.Set("Content-Type", "image/webp")
+
+				w.WriteHeader(http.StatusOK)
+				if _, err := io.Copy(w, f); err != nil {
+					log.Error("Failed to stream image: %s", err.Error())
+					http.Error(w, "Failed to stream image", http.StatusInternalServerError)
+					return
+				}
+			} else {
+				header.Set("Content-Type", "image/png")
+
+				w.WriteHeader(http.StatusOK)
+				if _, err := io.Copy(w, f); err != nil {
+					log.Error("Failed to stream image: %s", err.Error())
+					http.Error(w, "Failed to stream image", http.StatusInternalServerError)
+					return
+				}
 			}
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
