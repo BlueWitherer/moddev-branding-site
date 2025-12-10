@@ -108,7 +108,7 @@ func CreateImage(userId uint64, url string) (uint64, error) {
 	}
 
 	// Create new img - allow multiple imgs per user per type
-	stmt, err := utils.PrepareStmt(dat, "INSERT INTO images (user_id, image_url, pending) VALUES (?, ?)")
+	stmt, err := utils.PrepareStmt(dat, "INSERT INTO images (user_id, image_url, pending) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE image_url = VALUES(image_url), pending = VALUES(pending)")
 	if err != nil {
 		return 0, err
 	}

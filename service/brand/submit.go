@@ -86,10 +86,10 @@ func init() {
 			if err != nil {
 				e := os.Remove(dstPath)
 				if e != nil {
-					log.Error("Failed to delete advertisement image: %s", e.Error())
+					log.Error("Failed to delete brand image: %s", e.Error())
 				}
 
-				log.Error("Failed to create advertisement row: %s", err.Error())
+				log.Error("Failed to create brand image row: %s", err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
