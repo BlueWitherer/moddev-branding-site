@@ -52,18 +52,29 @@ func init() {
 			query := r.URL.Query()
 			userStr := query.Get("user")
 
-			user, err := strconv.ParseUint(userStr, 10, 64)
-			if err != nil {
-				log.Error("Failed to get user ID: %s", err.Error())
-				http.Error(w, "Failed to get user ID", http.StatusInternalServerError)
-				return
+			if userStr != "" {
+				user, err := strconv.ParseUint(userStr, 10, 64)
+				if err != nil {
+					log.Error("Failed to get user ID: %s", err.Error())
+					http.Error(w, "Failed to get user ID", http.StatusInternalServerError)
+					return
+				}
+
+				imgList, err = database.FilterImagesByUser(imgList, user)
+				if err != nil {
+					log.Error("Failed to filter images by user: %s", err.Error())
+					http.Error(w, "Failed to filter images", http.StatusInternalServerError)
+					return
+				}
 			}
 
-			imgList, err = database.FilterImagesByUser(imgList, user)
-			if err != nil {
-				log.Error("Failed to filter images by user: %s", err.Error())
-				http.Error(w, "Failed to filter images", http.StatusInternalServerError)
-				return
+			for i, img := range imgList {
+				u, err := database.GetUser(img.UserID)
+				if err != nil {
+					log.Error("Failed to get user for img %d: %s", img.ID, err.Error())
+					continue
+				}
+				imgList[i].Login = u.Login
 			}
 
 			log.Debug("Returning %d pending advertisements", len(imgList))

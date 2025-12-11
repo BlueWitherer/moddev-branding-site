@@ -9,4 +9,5 @@ type Img struct {
 	ImageURL string    `json:"image_url"`  // URL to the image image
 	Created  time.Time `json:"created_at"` // First created
 	Pending  bool      `json:"pending"`    // Under review
+	Login    string    `json:"login"`      // Owner branding image
 }
