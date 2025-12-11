@@ -94,21 +94,22 @@ func ApproveImage(id uint64) (*utils.Img, error) {
 		return nil, err
 	}
 
-	if val, found := findImage(id); found {
-		val.Pending = false
+	if img, found := findImage(id); found {
+		img.Pending = false
+		currentImages = setImage(img)
 	}
 
 	return GetImage(id)
 }
 
-// inserts or updates a brand image row
+// upserts a brand image row
 func CreateImage(userId uint64, url string) (uint64, error) {
 	if userId == 0 {
 		return 0, fmt.Errorf("missing img fields")
 	}
 
 	// Create new img - allow multiple imgs per user per type
-	stmt, err := utils.PrepareStmt(dat, "INSERT INTO images (user_id, image_url, pending) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE image_url = VALUES(image_url), pending = VALUES(pending)")
+	stmt, err := utils.PrepareStmt(dat, "INSERT INTO images (user_id, image_url, pending) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE image_url = VALUES(image_url), pending = VALUES(pending), created_at = CURRENT_TIMESTAMP")
 	if err != nil {
 		return 0, err
 	}
@@ -117,6 +118,11 @@ func CreateImage(userId uint64, url string) (uint64, error) {
 	res, err := stmt.Exec(userId, url, true)
 	if err != nil {
 		return 0, err
+	}
+
+	if img, found := findImageFromUser(userId); found {
+		img.ImageURL = url
+		currentImages = setImage(img)
 	}
 
 	last, err := res.LastInsertId()

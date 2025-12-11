@@ -49,7 +49,7 @@ func init() {
 			// Get image file
 			file, _, err := r.FormFile("image-upload")
 			if err != nil {
-				log.Error(err.Error())
+				log.Error("Image not found: %s", err.Error())
 				http.Error(w, "Image not found", http.StatusBadRequest)
 				return
 			}
@@ -69,7 +69,7 @@ func init() {
 
 			dst, err := os.Create(dstPath)
 			if err != nil {
-				log.Error(err.Error())
+				log.Error("Failed to save image: %s", err.Error())
 				http.Error(w, "Failed to save image", http.StatusInternalServerError)
 				return
 			}

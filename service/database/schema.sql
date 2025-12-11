@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS images (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     pending BOOLEAN NOT NULL DEFAULT TRUE,
     PRIMARY KEY (id),
-    KEY idx_user_id (user_id),
+    UNIQUE KEY idx_user_id (user_id),
     CONSTRAINT fk_ads_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 

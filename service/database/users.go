@@ -221,6 +221,32 @@ func VerifyUser(id uint64) (*utils.User, error) {
 		return nil, err
 	}
 
+	if user, found := findUser(id); found {
+		user.Verified = true
+		currentUsers = setUser(user)
+	}
+
+	approveStmt, err := utils.PrepareStmt(dat, "UPDATE images SET pending = FALSE WHERE user_id = ?")
+	if err != nil {
+		return nil, err
+	}
+	defer approveStmt.Close()
+
+	_, err = approveStmt.Exec(id)
+	if err != nil {
+		return nil, err
+	}
+
+	imgs, err := FilterImagesByUser(*getImages(), id)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, img := range imgs {
+		img.Pending = false
+		currentImages = setImage(img)
+	}
+
 	return GetUser(id)
 }
 
