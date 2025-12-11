@@ -20,7 +20,7 @@ function Pending() {
             const res = await fetch('/brand/pending');
             if (res.ok) {
                 const data = await res.json();
-                setImages(data);
+                setImages(data || []);
             } else {
                 console.error("Failed to fetch pending images");
             }

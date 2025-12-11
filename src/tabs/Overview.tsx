@@ -26,7 +26,7 @@ function Overview({ user }: OverviewProps) {
                 const res = await fetch('/brand/list');
                 if (res.ok) {
                     const data = await res.json();
-                    setImages(data);
+                    setImages(data || []);
                 } else {
                     console.error("Failed to fetch user images");
                 }

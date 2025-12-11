@@ -213,7 +213,7 @@ func FilterImagesByPending(rows []*utils.Img, showPending bool) ([]*utils.Img, e
 }
 
 func FilterImagesFromBannedUsers(rows []*utils.Img) ([]*utils.Img, error) {
-	var out []*utils.Img
+	out := make([]*utils.Img, 0)
 	for _, r := range rows {
 		user, err := GetUser(r.UserID)
 		if err != nil {
@@ -229,7 +229,7 @@ func FilterImagesFromBannedUsers(rows []*utils.Img) ([]*utils.Img, error) {
 }
 
 func FilterImagesByUser(rows []*utils.Img, userId uint64) ([]*utils.Img, error) {
-	var out []*utils.Img
+	out := make([]*utils.Img, 0)
 	for _, r := range rows {
 		if r.UserID == userId {
 			out = append(out, r)
