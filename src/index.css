@@ -235,3 +235,17 @@ button:focus-visible {
 .dashboard-menu-paper .MuiMenuItem-root.Mui-selected:hover {
     background-color: rgba(253, 128, 241, 0.3) !important;
 }
+
+.social-button {
+    color: white !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    text-decoration: none;
+    background-color: transparent !important;
+}
+
+.social-button:hover {
+    color: #fd80ec !important;
+}

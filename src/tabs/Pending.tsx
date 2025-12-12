@@ -58,7 +58,7 @@ function Pending() {
     return (
         <Box sx={{ maxWidth: 1000, mx: 'auto', p: 3 }}>
             <Typography variant="h4" gutterBottom sx={{ mb: 4, textAlign: 'center', fontFamily: "'Russo One', sans-serif" }}>
-                Pending Brandings
+                Pending Branding
             </Typography>
             <TableContainer component={Paper} sx={{ bgcolor: 'rgba(0,0,0,0.4)', color: 'white' }}>
                 <Table>

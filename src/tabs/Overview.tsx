@@ -50,7 +50,7 @@ function Overview({ user }: OverviewProps) {
 
             <Paper sx={{ p: 4, bgcolor: 'rgba(0,0,0,0.4)', color: 'white', minHeight: 200 }}>
                 <Typography variant="h6" gutterBottom sx={{ mb: 3, textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)', pb: 1 }}>
-                    Your Brandings
+                    Your Branding
                 </Typography>
 
                 {loading ? (
@@ -61,7 +61,7 @@ function Overview({ user }: OverviewProps) {
                         Go to the Submission tab to upload one!
                     </Typography>
                 ) : (
-                    <Grid container spacing={3}>
+                    <Grid container spacing={3} sx={{ justifyContent: 'center', alignItems: 'center' }}>
                         {images.map((img) => (
                             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={img.id}>
                                 <Card sx={{
@@ -69,7 +69,7 @@ function Overview({ user }: OverviewProps) {
                                     border: '1px solid rgba(255, 255, 255, 0.1)',
                                     height: '100%',
                                     display: 'flex',
-                                    flexDirection: 'column'
+                                    flexDirection: 'column',
                                 }}>
                                     <Box sx={{ position: 'relative', pt: '56.25%' /* 16:9 aspect ratio */ }}>
                                         <CardMedia

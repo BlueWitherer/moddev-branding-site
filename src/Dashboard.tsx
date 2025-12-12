@@ -7,10 +7,14 @@ import { useNavigate } from "react-router-dom";
 import type { User } from "./Include.mts";
 import { Avatar, Box, Tabs, Tab, Typography, IconButton, useTheme, useMediaQuery, Select, MenuItem, FormControl, Button, Dialog, DialogTitle, DialogContent } from "@mui/material";
 
-
 import type { SelectChangeEvent } from "@mui/material";
 
 import LogoutIcon from '@mui/icons-material/Logout';
+import Diversity1Icon from '@mui/icons-material/Diversity1';
+
+import YouTubeIcon from '@mui/icons-material/YouTube';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import XIcon from '@mui/icons-material/X';
 
 import Overview from "./tabs/Overview";
 import Submission from "./tabs/Submission";
@@ -221,7 +225,7 @@ function Dashboard() {
                         fontSize: '0.75rem',
                     }}
                 >
-                    CREDITS
+                    <Diversity1Icon />
                 </Button>
             </Box>
 
@@ -245,7 +249,7 @@ function Dashboard() {
                     }
                 }}
             >
-                <DialogTitle id="credits-modal-title" sx={{ mb: 1, color: 'rgba(253, 128, 236, 1)', fontFamily: "'Russo One', sans-serif", textAlign: 'center' }}>
+                <DialogTitle id="credits-modal-title" sx={{ mb: 1, color: 'rgba(255, 255, 255, 1)', fontFamily: "'Russo One', sans-serif", textAlign: 'center' }}>
                     Credits
                 </DialogTitle>
 
@@ -280,11 +284,45 @@ function Dashboard() {
                             </Typography>
                         </Box>
                     </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 1 }}>
+                        <IconButton
+                            className="social-button"
+                            component="a"
+                            href="https://www.youtube.com/@cheese_works/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="YouTube"
+                        >
+                            <YouTubeIcon />
+                        </IconButton>
+
+                        <IconButton
+                            className="social-button"
+                            component="a"
+                            href="https://www.github.com/BlueWitherer/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="GitHub"
+                        >
+                            <GitHubIcon />
+                        </IconButton>
+
+                        <IconButton
+                            className="social-button"
+                            component="a"
+                            href="https://www.x.com/chris_rhatt/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="X"
+                        >
+                            <XIcon />
+                        </IconButton>
+                    </Box>
                     <Button variant="contained" color="error" onClick={handleCloseCredits} sx={{ mt: 2, width: '100%' }}>
                         Close
                     </Button>
                 </DialogContent>
-            </Dialog>
+            </Dialog >
         </>
     );
 };
