@@ -1,5 +1,8 @@
 import { useState, type ChangeEvent } from "react";
+
 import { Box, Button, Typography, Paper, Alert, Snackbar, CircularProgress, Dialog, DialogContent } from '@mui/material';
+
+import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 function Submission() {
@@ -64,7 +67,7 @@ function Submission() {
                 <Button
                     component="label"
                     variant="outlined"
-                    startIcon={<CloudUploadIcon />}
+                    startIcon={<AddPhotoAlternateIcon />}
                     sx={{
                         p: 2,
                         borderStyle: 'dashed',
@@ -147,7 +150,7 @@ function Submission() {
                         }
                     }}
                 >
-                    {uploading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Submit Branding'}
+                    {uploading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : <><CloudUploadIcon /> Submit Branding</>}
                 </Button>
             </Paper>
 

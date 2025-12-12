@@ -1,4 +1,4 @@
-# Mod Dev Branding Site
+# [<img src="./favicon.ico" width="25" alt="The site's favicon." />](https://www.geode-sdk.org/mods/cheeseworks.moddevbranding) Mod Dev Branding Site
 Manage your Geode developer branding.
 
 ---

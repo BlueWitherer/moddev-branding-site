@@ -1,13 +1,16 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
 
-// https://vite.dev/config/
+import react from '@vitejs/plugin-react';
+
 export default defineConfig({
-    plugins: [
+    "plugins": [
         react({
-            babel: {
-                plugins: [['babel-plugin-react-compiler']],
+            "babel": {
+                "plugins": [['babel-plugin-react-compiler']],
             },
         }),
     ],
+    "build": {
+        "chunkSizeWarningLimit": 1024,
+    },
 })

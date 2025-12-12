@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+
 import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Snackbar, Alert } from "@mui/material";
+
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface Img {
@@ -18,19 +20,25 @@ function Pending() {
     const fetchImages = async () => {
         try {
             const res = await fetch('/brand/pending');
-            if (res.ok) {
-                const data = await res.json();
-                setImages(data || []);
-            } else {
+            if (!res.ok) {
                 console.error("Failed to fetch pending images");
-            }
+                return [];
+            };
+
+            return await res.json();
         } catch (error) {
             console.error(error);
-        }
+            return [];
+        };
     };
 
     useEffect(() => {
-        fetchImages();
+        const load = async () => {
+            const data = await fetchImages();
+            setImages(data);
+        };
+
+        load();
     }, []);
 
     const handleAccept = async (id: number) => {

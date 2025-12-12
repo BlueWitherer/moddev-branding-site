@@ -13,6 +13,8 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+
+    --icon-scale: 0.5em;
 }
 
 /* Logo stuff */
@@ -234,6 +236,14 @@ button:focus-visible {
 
 .dashboard-menu-paper .MuiMenuItem-root.Mui-selected:hover {
     background-color: rgba(253, 128, 241, 0.3) !important;
+}
+
+.simple-icon {
+    display: inline-block;
+    vertical-align: middle;
+    font-size: 1em;
+    line-height: 1;
+    margin-right: 0.25em;
 }
 
 .social-button {

@@ -1,23 +1,18 @@
 import { useState, useEffect } from 'react';
-import type { User } from "../Include.mts";
+
+import type { Image, User } from "../Include.mts";
+
 import { Box, Paper, Typography, Grid, Card, CardMedia, CardContent, Chip } from "@mui/material";
+
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 
 interface OverviewProps {
     user: User | null;
-}
-
-interface Img {
-    id: number;
-    user_id: number;
-    image_url: string;
-    created_at: string;
-    pending: boolean;
-}
+};
 
 function Overview({ user }: OverviewProps) {
-    const [images, setImages] = useState<Img[]>([]);
+    const [images, setImages] = useState<Image[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -52,7 +47,6 @@ function Overview({ user }: OverviewProps) {
                 <Typography variant="h6" gutterBottom sx={{ mb: 3, textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)', pb: 1 }}>
                     Your Branding
                 </Typography>
-
                 {loading ? (
                     <Typography textAlign="center">Loading...</Typography>
                 ) : images.length === 0 ? (
@@ -109,7 +103,7 @@ function Overview({ user }: OverviewProps) {
                                     </Box>
                                     <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
                                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                                            Submitted: {new Date(img.created_at).toLocaleDateString()}
+                                            Submitted: {new Date(img.created_at || '').toLocaleDateString()}
                                         </Typography>
                                     </CardContent>
                                 </Card>

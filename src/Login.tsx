@@ -5,8 +5,9 @@ import './index.css';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import GitHubIcon from '@mui/icons-material/GitHub';
 import { Box, Paper, Typography, Button } from '@mui/material';
+
+import { SiGithub } from "react-icons/si";
 
 function Login() {
     const navigate = useNavigate();
@@ -89,7 +90,7 @@ function Login() {
                     variant="contained"
                     size="large"
                     onClick={handleLogin}
-                    startIcon={<GitHubIcon />}
+                    startIcon={<SiGithub />}
                     sx={{
                         borderRadius: '50px',
                         px: 5,

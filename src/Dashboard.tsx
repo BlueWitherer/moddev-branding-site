@@ -12,9 +12,7 @@ import type { SelectChangeEvent } from "@mui/material";
 import LogoutIcon from '@mui/icons-material/Logout';
 import Diversity1Icon from '@mui/icons-material/Diversity1';
 
-import YouTubeIcon from '@mui/icons-material/YouTube';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import XIcon from '@mui/icons-material/X';
+import { SiYoutube, SiGithub, SiX, SiGeode } from "react-icons/si";
 
 import Overview from "./tabs/Overview";
 import Submission from "./tabs/Submission";
@@ -285,6 +283,11 @@ function Dashboard() {
                         </Box>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 1 }}>
+                        <Button variant="contained" href="https://www.geode-sdk.org/mods/cheeseworks.moddevbranding" target="_blank" sx={{ mt: 2, width: '50%', bgcolor: 'rgb(253, 128, 241)' }}>
+                            <SiGeode className="simple-icon" /> Download Mod
+                        </Button>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 1 }}>
                         <IconButton
                             className="social-button"
                             component="a"
@@ -293,7 +296,7 @@ function Dashboard() {
                             rel="noopener noreferrer"
                             aria-label="YouTube"
                         >
-                            <YouTubeIcon />
+                            <SiYoutube />
                         </IconButton>
 
                         <IconButton
@@ -304,7 +307,7 @@ function Dashboard() {
                             rel="noopener noreferrer"
                             aria-label="GitHub"
                         >
-                            <GitHubIcon />
+                            <SiGithub />
                         </IconButton>
 
                         <IconButton
@@ -315,7 +318,7 @@ function Dashboard() {
                             rel="noopener noreferrer"
                             aria-label="X"
                         >
-                            <XIcon />
+                            <SiX />
                         </IconButton>
                     </Box>
                     <Button variant="contained" color="error" onClick={handleCloseCredits} sx={{ mt: 2, width: '100%' }}>
