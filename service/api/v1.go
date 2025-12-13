@@ -7,10 +7,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"service/database"
 	"service/log"
+
+	"github.com/patrickmn/go-cache"
 )
+
+var fixedUsernames = cache.New(6*time.Hour, 1*time.Hour)
 
 func init() {
 	http.HandleFunc("/api/v1", func(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +53,14 @@ func init() {
 			if err != nil {
 				log.Warn("Failed to get user: %s", err.Error())
 
-				if modId != "" {
+				if fixed, found := fixedUsernames.Get(dev); found {
+					user, err = database.GetUserFromLogin(fixed.(string))
+					if err != nil {
+						log.Error("Failed to get user: %s", err.Error())
+						http.Error(w, "Failed to get user", http.StatusNotFound)
+						return
+					}
+				} else if modId != "" {
 					modDev, err := database.ResolveDevFromModID(modId, dev)
 					if err != nil {
 						log.Error("Failed to get mod developer: %v", err)
@@ -62,6 +74,8 @@ func init() {
 						http.Error(w, "Failed to get user", http.StatusNotFound)
 						return
 					}
+
+					fixedUsernames.Set(dev, modDev.Username, cache.DefaultExpiration)
 				} else {
 					devLower := strings.ToLower(dev)
 					githubURL := fmt.Sprintf(
