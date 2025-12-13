@@ -38,41 +38,58 @@ func init() {
 			header.Set("Content-Type", "image/webp")
 
 			query := r.URL.Query()
+
 			dev := query.Get("dev")
+			modId := query.Get("mod")
+
 			fmtParam := query.Get("fmt")
 
 			user, err := database.GetUserFromLogin(dev)
 			if err != nil {
 				log.Warn("Failed to get user: %s", err.Error())
 
-				devLower := strings.ToLower(dev)
-				githubURL := fmt.Sprintf(
-					"https://raw.githubusercontent.com/Alphalaneous/ModDevBranding-Images/refs/heads/main/Images/%s.png",
-					devLower,
-				)
+				if modId != "" {
+					modDev, err := database.ResolveDevFromModID(modId, dev)
+					if err != nil {
+						log.Error("Failed to get mod developer: %v", err)
+						http.Error(w, "Failed to get mod developer", http.StatusNotFound)
+						return
+					}
 
-				resp, err := http.Get(githubURL)
-				if err != nil || resp.StatusCode != http.StatusOK {
-					log.Error("Failed to fetch fallback image: %v", err)
-					http.Error(w, "Image not found", http.StatusNotFound)
-					return
-				}
-				defer resp.Body.Close()
-
-				if fmtParam == "webp" {
-					header.Set("Content-Type", "image/webp")
+					user, err = database.GetUserFromLogin(modDev.Username)
+					if err != nil {
+						log.Error("Failed to get user: %s", err.Error())
+						http.Error(w, "Failed to get user", http.StatusNotFound)
+						return
+					}
 				} else {
-					header.Set("Content-Type", "image/png")
-				}
+					devLower := strings.ToLower(dev)
+					githubURL := fmt.Sprintf(
+						"https://raw.githubusercontent.com/Alphalaneous/ModDevBranding-Images/refs/heads/main/Images/%s.png",
+						devLower,
+					)
 
-				w.WriteHeader(http.StatusOK)
-				if _, err := io.Copy(w, resp.Body); err != nil {
-					log.Error("Failed to stream fallback image: %v", err)
-					http.Error(w, "Failed to stream image", http.StatusInternalServerError)
-					return
-				}
+					resp, err := http.Get(githubURL)
+					if err != nil || resp.StatusCode != http.StatusOK {
+						log.Error("Image not found: %v", err)
+						http.Error(w, "Image not found", http.StatusNotFound)
+						return
+					}
+					defer resp.Body.Close()
 
-				return
+					if fmtParam == "webp" {
+						header.Set("Content-Type", "image/webp")
+					} else {
+						header.Set("Content-Type", "image/png")
+					}
+
+					w.WriteHeader(http.StatusOK)
+					if _, err := io.Copy(w, resp.Body); err != nil {
+						log.Error("Failed to stream fallback image: %v", err)
+						http.Error(w, "Failed to stream image", http.StatusInternalServerError)
+						return
+					}
+				}
 			}
 
 			img, err := database.GetImageForUser(user.ID)

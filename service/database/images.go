@@ -2,13 +2,17 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
 	"service/log"
 	"service/utils"
+
+	"github.com/patrickmn/go-cache"
 )
 
 func newImages() *[]*utils.Img {
@@ -365,6 +369,54 @@ func DeleteImage(imgId uint64) (*utils.Img, error) {
 	currentImages = deleteImage(imgId)
 
 	return img, nil
+}
+
+var ModCache = cache.New(24*time.Hour, 1*time.Hour)
+
+func getModCached(modID string) (*utils.Mod, error) {
+	if modID == "" {
+		return nil, fmt.Errorf("no mod id provided")
+	}
+
+	if cached, found := ModCache.Get(modID); found {
+		mod := cached.(utils.Mod)
+		return &mod, nil
+	}
+
+	apiURL := fmt.Sprintf("https://api.geode-sdk.org/v1/mods/%s", modID)
+	resp, err := http.Get(apiURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch mod info: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("mod API returned status %d", resp.StatusCode)
+	}
+
+	var modReq utils.ModRequest
+	if err := json.NewDecoder(resp.Body).Decode(&modReq); err != nil {
+		return nil, fmt.Errorf("failed to decode mod API response: %w", err)
+	}
+
+	ModCache.Set(modID, modReq.Payload, cache.DefaultExpiration)
+
+	return &modReq.Payload, nil
+}
+
+func ResolveDevFromModID(modID string, dev string) (*utils.ModDeveloper, error) {
+	mod, err := getModCached(modID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, devInfo := range mod.Developers {
+		if devInfo.IsOwner {
+			return &devInfo, nil
+		}
+	}
+
+	return nil, fmt.Errorf("developer %s not found in mod %s", dev, modID)
 }
 
 func init() {
