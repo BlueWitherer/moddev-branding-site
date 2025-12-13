@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,20 @@ import (
 )
 
 var fixedUsernames = cache.New(6*time.Hour, 1*time.Hour)
+
+func getGitUsername(repoURL string) (string, error) {
+	u, err := url.Parse(repoURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid URL: %w", err)
+	}
+
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) < 1 {
+		return "", fmt.Errorf("invalid GitHub repo URL: %s", repoURL)
+	}
+
+	return parts[0], nil
+}
 
 func init() {
 	http.HandleFunc("/api/v1", func(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +76,14 @@ func init() {
 						return
 					}
 				} else if modId != "" {
-					modDev, err := database.ResolveDevFromModID(modId, dev)
+					mod, err := database.GetModCached(modId)
+					if err != nil {
+						log.Error("Failed to get mod: %v", err)
+						http.Error(w, "Failed to get mod", http.StatusNotFound)
+						return
+					}
+
+					modDev, err := database.ResolveDevFromModID(mod.ID, dev)
 					if err != nil {
 						log.Error("Failed to get mod developer: %v", err)
 						http.Error(w, "Failed to get mod developer", http.StatusNotFound)
@@ -75,7 +97,14 @@ func init() {
 						return
 					}
 
-					fixedUsernames.Set(dev, modDev.Username, cache.DefaultExpiration)
+					username, err := getGitUsername(mod.Links.Source)
+					if err != nil {
+						log.Warn("Couldn't get GitHub username from repository URL %s", modDev.Username)
+					} else if username == dev {
+						fixedUsernames.Set(username, modDev.Username, cache.DefaultExpiration)
+					} else {
+						log.Warn("Usernames %s and %s do not match", dev, modDev.Username)
+					}
 				} else {
 					devLower := strings.ToLower(dev)
 					githubURL := fmt.Sprintf(

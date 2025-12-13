@@ -373,7 +373,7 @@ func DeleteImage(imgId uint64) (*utils.Img, error) {
 
 var ModCache = cache.New(24*time.Hour, 1*time.Hour)
 
-func getModCached(modID string) (*utils.Mod, error) {
+func GetModCached(modID string) (*utils.Mod, error) {
 	if modID == "" {
 		return nil, fmt.Errorf("no mod id provided")
 	}
@@ -405,7 +405,7 @@ func getModCached(modID string) (*utils.Mod, error) {
 }
 
 func ResolveDevFromModID(modID string, dev string) (*utils.ModDeveloper, error) {
-	mod, err := getModCached(modID)
+	mod, err := GetModCached(modID)
 	if err != nil {
 		return nil, err
 	}

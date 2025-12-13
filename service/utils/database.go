@@ -10,6 +10,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+type ModLinks struct {
+	Source string `json:"source"`
+}
+
 type ModDeveloper struct {
 	Username string `json:"username"`
 	IsOwner  bool   `json:"is_owner"`
@@ -18,6 +22,7 @@ type ModDeveloper struct {
 type Mod struct {
 	ID         string         `json:"id"`
 	Developers []ModDeveloper `json:"developers"`
+	Links      ModLinks       `json:"links"`
 }
 
 type ModRequest struct {
