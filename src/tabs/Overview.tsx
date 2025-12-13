@@ -24,17 +24,15 @@ function Overview({ user }: OverviewProps) {
                     setImages(data || []);
                 } else {
                     console.error("Failed to fetch user images");
-                }
+                };
             } catch (error) {
                 console.error(error);
             } finally {
                 setLoading(false);
-            }
+            };
         };
 
-        if (user) {
-            fetchImages();
-        }
+        if (user) fetchImages();
     }, [user]);
 
     return (

@@ -16,17 +16,17 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-var fixedUsernames = cache.New(6*time.Hour, 1*time.Hour)
+var fixedUsernames = cache.New(12*time.Hour, 1*time.Hour)
 
-func getGitUsername(repoURL string) (string, error) {
-	u, err := url.Parse(repoURL)
+func getGitUsername(repoUrl string) (string, error) {
+	u, err := url.Parse(repoUrl)
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %w", err)
 	}
 
 	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
-	if len(parts) < 1 {
-		return "", fmt.Errorf("invalid GitHub repo URL: %s", repoURL)
+	if len(parts) <= 0 {
+		return "", fmt.Errorf("invalid GitHub repo URL: %s", repoUrl)
 	}
 
 	return parts[0], nil

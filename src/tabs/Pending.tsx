@@ -3,15 +3,11 @@ import { useState, useEffect } from 'react';
 import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Snackbar, Alert } from "@mui/material";
 
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import type { Image } from '../Include.mjs';
 
-interface Img {
-    id: number;
-    user_id: number;
-    image_url: string;
-    created_at: string;
-    pending: boolean;
+interface Img extends Image {
     login: string;
-}
+};
 
 function Pending() {
     const [images, setImages] = useState<Img[]>([]);
@@ -102,7 +98,7 @@ function Pending() {
                                     />
                                 </TableCell>
                                 <TableCell sx={{ color: 'white' }}>
-                                    {new Date(img.created_at).toLocaleString()}
+                                    {new Date(img.created_at || "").toLocaleString()}
                                 </TableCell>
                                 <TableCell sx={{ color: 'white' }}>
                                     <Button

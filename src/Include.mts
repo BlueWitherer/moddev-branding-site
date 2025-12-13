@@ -21,9 +21,9 @@ export interface User {
 
 export interface Image {
     /** Brand image ID */
-    id: string;
+    id: number;
     /** GitHub user ID */
-    user_id: string;
+    user_id: number;
     /** Brand image URL */
     image_url: string;
     /** First created */
