@@ -253,19 +253,6 @@ function Dashboard() {
 
                 <DialogContent>
                     <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', mt: 1 }}>
-                        {/* ArcticWoof */}
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <Avatar
-                                src="https://avatars.githubusercontent.com/u/56347227"
-                                sx={{ width: '70%', height: '70%', mb: 1, cursor: 'pointer' }}
-                                onClick={() => window.open("https://github.com/DumbCaveSpider", "_blank")}
-                            />
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>ArcticWoof</Typography>
-                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                Frontend/UI/UX
-                            </Typography>
-                        </Box>
-
                         {/* Cheeseworks */}
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <Avatar
@@ -281,10 +268,23 @@ function Dashboard() {
                                 Geode Mod
                             </Typography>
                         </Box>
+
+                        {/* ArcticWoof */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Avatar
+                                src="https://avatars.githubusercontent.com/u/56347227"
+                                sx={{ width: '70%', height: '70%', mb: 1, cursor: 'pointer' }}
+                                onClick={() => window.open("https://github.com/DumbCaveSpider", "_blank")}
+                            />
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>ArcticWoof</Typography>
+                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                Frontend/UI/UX
+                            </Typography>
+                        </Box>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 1 }}>
-                        <Button variant="contained" href="https://www.geode-sdk.org/mods/cheeseworks.moddevbranding" target="_blank" sx={{ mt: 2, width: '50%', bgcolor: 'rgb(253, 128, 241)' }}>
-                            <SiGeode className="simple-icon" /> Download Mod
+                        <Button variant="contained" href="https://www.geode-sdk.org/mods/cheeseworks.moddevbranding" target="_blank" sx={{ mt: 2, width: '62.5%', bgcolor: 'rgb(253, 128, 241)' }}>
+                            <SiGeode className="simple-icon" /> Get The Mod
                         </Button>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 1 }}>
@@ -302,7 +302,7 @@ function Dashboard() {
                         <IconButton
                             className="social-button"
                             component="a"
-                            href="https://www.github.com/BlueWitherer/"
+                            href="https://www.github.com/BlueWitherer/moddev-branding-site/"
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="GitHub"

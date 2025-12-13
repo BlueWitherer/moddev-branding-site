@@ -73,7 +73,7 @@ function Login() {
                 }}
             >
                 <Box sx={{ mb: 3 }}>
-                    <a href='https://www.geode-sdk.org/mods/cheeseworks.moddevbranding' target="_blank">
+                    <a href='https://www.geode-sdk.org/mods/cheeseworks.moddevbranding' target="_blank" aria-label="Download Geode Mod">
                         <img src='/icon.png' className="logo" alt="Mod Developer Branding logo" style={{ height: '8em' }} />
                     </a>
                 </Box>
