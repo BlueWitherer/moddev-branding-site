@@ -132,6 +132,8 @@ func init() {
 						http.Error(w, "Failed to stream image", http.StatusInternalServerError)
 						return
 					}
+
+					return
 				}
 			}
 
@@ -171,6 +173,8 @@ func init() {
 						http.Error(w, "Failed to stream image", http.StatusInternalServerError)
 						return
 					}
+
+					return
 				} else {
 					header.Set("Content-Type", "image/png")
 
@@ -180,6 +184,8 @@ func init() {
 						http.Error(w, "Failed to stream image", http.StatusInternalServerError)
 						return
 					}
+
+					return
 				}
 			} else {
 				log.Error("Failed to process user")
