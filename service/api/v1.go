@@ -135,50 +135,56 @@ func init() {
 				}
 			}
 
-			img, err := database.GetImageForUser(user.ID)
-			if err != nil {
-				log.Error("Failed to get image info: %s", err.Error())
-				http.Error(w, "Failed to get image info", http.StatusInternalServerError)
-				return
-			}
-
-			if img.Pending {
-				log.Error("Image still pending review")
-				http.Error(w, "Image still pending review", http.StatusForbidden)
-				return
-			}
-
-			fileName := fmt.Sprintf("%d.webp", user.ID)
-			dstPath := filepath.Join("..", "cdn", fileName)
-
-			log.Info("Getting brand image %s for %s", dstPath, user.Login)
-
-			f, err := os.Open(dstPath)
-			if err != nil {
-				log.Error("Failed to open image: %s", err.Error())
-				http.Error(w, "Failed to open image", http.StatusNotFound)
-				return
-			}
-			defer f.Close()
-
-			if fmtParam == "webp" {
-				header.Set("Content-Type", "image/webp")
-
-				w.WriteHeader(http.StatusOK)
-				if _, err := io.Copy(w, f); err != nil {
-					log.Error("Failed to stream image: %s", err.Error())
-					http.Error(w, "Failed to stream image", http.StatusInternalServerError)
+			if user != nil {
+				img, err := database.GetImageForUser(user.ID)
+				if err != nil {
+					log.Error("Failed to get image info: %s", err.Error())
+					http.Error(w, "Failed to get image info", http.StatusInternalServerError)
 					return
+				}
+
+				if img.Pending {
+					log.Error("Image still pending review")
+					http.Error(w, "Image still pending review", http.StatusForbidden)
+					return
+				}
+
+				fileName := fmt.Sprintf("%d.webp", user.ID)
+				dstPath := filepath.Join("..", "cdn", fileName)
+
+				log.Info("Getting brand image %s for %s", dstPath, user.Login)
+
+				f, err := os.Open(dstPath)
+				if err != nil {
+					log.Error("Failed to open image: %s", err.Error())
+					http.Error(w, "Failed to open image", http.StatusNotFound)
+					return
+				}
+				defer f.Close()
+
+				if fmtParam == "webp" {
+					header.Set("Content-Type", "image/webp")
+
+					w.WriteHeader(http.StatusOK)
+					if _, err := io.Copy(w, f); err != nil {
+						log.Error("Failed to stream image: %s", err.Error())
+						http.Error(w, "Failed to stream image", http.StatusInternalServerError)
+						return
+					}
+				} else {
+					header.Set("Content-Type", "image/png")
+
+					w.WriteHeader(http.StatusOK)
+					if _, err := io.Copy(w, f); err != nil {
+						log.Error("Failed to stream image: %s", err.Error())
+						http.Error(w, "Failed to stream image", http.StatusInternalServerError)
+						return
+					}
 				}
 			} else {
-				header.Set("Content-Type", "image/png")
-
-				w.WriteHeader(http.StatusOK)
-				if _, err := io.Copy(w, f); err != nil {
-					log.Error("Failed to stream image: %s", err.Error())
-					http.Error(w, "Failed to stream image", http.StatusInternalServerError)
-					return
-				}
+				log.Error("Failed to process user")
+				http.Error(w, "Failed to process user", http.StatusInternalServerError)
+				return
 			}
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
