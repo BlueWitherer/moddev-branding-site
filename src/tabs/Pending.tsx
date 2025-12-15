@@ -81,7 +81,7 @@ function Pending() {
                             <TableRow key={img.id} hover sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}>
                                 <TableCell sx={{ color: 'white' }}>{img.id}</TableCell>
                                 <TableCell sx={{ color: 'white' }}>{img.user_id}</TableCell>
-                                <TableCell sx={{ color: 'white' }}>{img.login}</TableCell>
+                                <TableCell sx={{ color: 'white' }}><a href={`https://www.github.com/${img.login}/`} target="_blank">{img.login}</a></TableCell>
                                 <TableCell sx={{ color: 'white' }}>
                                     <Box
                                         component="img"

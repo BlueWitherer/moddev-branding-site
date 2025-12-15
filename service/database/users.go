@@ -55,7 +55,7 @@ func findUserByLogin(login string) (*utils.User, bool) {
 
 func setUser(user *utils.User) *[]*utils.User {
 	if currentUsers != nil {
-		log.Debug("Caching user %s", user.ID)
+		log.Debug("Caching user %d", user.ID)
 		*currentUsers = append(*currentUsers, user)
 	}
 

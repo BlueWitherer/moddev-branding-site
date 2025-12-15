@@ -100,10 +100,10 @@ func init() {
 					username, err := getGitUsername(mod.Links.Source)
 					if err != nil {
 						log.Warn("Couldn't get GitHub username from repository URL %s", modDev.Username)
-					} else if username == dev {
+					} else if username != "" && dev != "" && username == dev {
 						fixedUsernames.Set(username, modDev.Username, cache.DefaultExpiration)
 					} else {
-						log.Warn("Usernames %s and %s do not match", dev, modDev.Username)
+						log.Warn("Usernames %s and %s do not match or are empty", dev, modDev.Username)
 					}
 				} else {
 					devLower := strings.ToLower(dev)
