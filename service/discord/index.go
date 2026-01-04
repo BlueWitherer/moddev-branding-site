@@ -75,34 +75,40 @@ func WebhookAccept(img *utils.Img, staff *utils.User) error {
 		mod = "Developer is verified"
 	}
 
-	_, err = s.WebhookExecute(id, token, true, &discordgo.WebhookParams{
-		Username:  WebName,
-		AvatarURL: WebAvatar,
-		Embeds: []*discordgo.MessageEmbed{
-			{
-				Title: "✅ New Developer Branding",
-				Fields: []*discordgo.MessageEmbedField{
-					{
-						Name:   "Developer",
-						Value:  fmt.Sprintf("**[@%s](https://www.github.com/%s/)**", u.Login, u.Login),
-						Inline: true,
+	go func() {
+		_, err = s.WebhookExecute(id, token, true, &discordgo.WebhookParams{
+			Username:  WebName,
+			AvatarURL: WebAvatar,
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Title: "✅ New Developer Branding",
+					Fields: []*discordgo.MessageEmbedField{
+						{
+							Name:   "Developer",
+							Value:  fmt.Sprintf("**[@%s](https://www.github.com/%s/)**", u.Login, u.Login),
+							Inline: true,
+						},
+						{
+							Name:   "Moderator",
+							Value:  mod,
+							Inline: true,
+						},
 					},
-					{
-						Name:   "Moderator",
-						Value:  mod,
-						Inline: true,
+					Color: colorPrimary,
+					Image: &discordgo.MessageEmbedImage{
+						URL:      img.ImageURL,
+						ProxyURL: img.ImageURL,
 					},
-				},
-				Color: colorPrimary,
-				Image: &discordgo.MessageEmbedImage{
-					URL:      img.ImageURL,
-					ProxyURL: img.ImageURL,
 				},
 			},
-		},
-	})
+		})
 
-	return err
+		if err != nil {
+			log.Error(err.Error())
+		}
+	}()
+
+	return nil
 }
 
 func WebhookStaffSubmit(img *utils.Img) error {
@@ -116,29 +122,35 @@ func WebhookStaffSubmit(img *utils.Img) error {
 		return err
 	}
 
-	_, err = s.WebhookExecute(id, token, true, &discordgo.WebhookParams{
-		Username:  WebName,
-		AvatarURL: WebAvatar,
-		Embeds: []*discordgo.MessageEmbed{
-			{
-				Title: "🕑 Branding Submission",
-				Fields: []*discordgo.MessageEmbedField{
-					{
-						Name:   "Developer",
-						Value:  fmt.Sprintf("**[@%s](https://www.github.com/%s/)**", u.Login, u.Login),
-						Inline: true,
+	go func() {
+		_, err = s.WebhookExecute(id, token, true, &discordgo.WebhookParams{
+			Username:  WebName,
+			AvatarURL: WebAvatar,
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Title: "🕑 Branding Submission",
+					Fields: []*discordgo.MessageEmbedField{
+						{
+							Name:   "Developer",
+							Value:  fmt.Sprintf("**[@%s](https://www.github.com/%s/)**", u.Login, u.Login),
+							Inline: true,
+						},
+					},
+					Color: colorTertiary,
+					Image: &discordgo.MessageEmbedImage{
+						URL:      img.ImageURL,
+						ProxyURL: img.ImageURL,
 					},
 				},
-				Color: colorTertiary,
-				Image: &discordgo.MessageEmbedImage{
-					URL:      img.ImageURL,
-					ProxyURL: img.ImageURL,
-				},
 			},
-		},
-	})
+		})
 
-	return err
+		if err != nil {
+			log.Error(err.Error())
+		}
+	}()
+
+	return nil
 }
 
 func init() {
