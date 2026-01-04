@@ -76,7 +76,7 @@ func WebhookAccept(img *utils.Img, staff *utils.User) error {
 	}
 
 	go func() {
-		_, err = s.WebhookExecute(id, token, true, &discordgo.WebhookParams{
+		_, err = s.WebhookExecute(id, token, false, &discordgo.WebhookParams{
 			Username:  WebName,
 			AvatarURL: WebAvatar,
 			Embeds: []*discordgo.MessageEmbed{
@@ -123,7 +123,7 @@ func WebhookStaffSubmit(img *utils.Img) error {
 	}
 
 	go func() {
-		_, err = s.WebhookExecute(id, token, true, &discordgo.WebhookParams{
+		_, err = s.WebhookExecute(id, token, false, &discordgo.WebhookParams{
 			Username:  WebName,
 			AvatarURL: WebAvatar,
 			Embeds: []*discordgo.MessageEmbed{
