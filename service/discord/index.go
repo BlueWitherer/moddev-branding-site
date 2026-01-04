@@ -72,7 +72,7 @@ func WebhookAccept(img *utils.Img, staff *utils.User) error {
 	if staff != nil {
 		mod = fmt.Sprintf("[@%s](https://www.github.com/%s/)", staff.Login, staff.Login)
 	} else {
-		mod = "Developer is verified"
+		mod = "<:ico:1325250328005967932> Developer is verified"
 	}
 
 	go func() {
