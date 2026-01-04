@@ -7,6 +7,7 @@ import (
 
 	"service/access"
 	"service/database"
+	"service/discord"
 	"service/log"
 )
 
@@ -135,6 +136,11 @@ func init() {
 				log.Error("Failed to approve img: %s", err.Error())
 				http.Error(w, "Failed to approve img", http.StatusInternalServerError)
 				return
+			}
+
+			err = discord.WebhookAccept(img, u)
+			if err != nil {
+				log.Warn(err.Error())
 			}
 
 			w.WriteHeader(http.StatusOK)
