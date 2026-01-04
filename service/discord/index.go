@@ -3,6 +3,7 @@ package discord
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"service/database"
 	"service/log"
@@ -57,6 +58,10 @@ func getSession(private bool) (*discordgo.Session, string, string, error) {
 	}
 }
 
+func getDevHyperlink(dev string) string {
+	return fmt.Sprintf("**[@%s](https://geode-sdk.org/mods?per_page=20&developer=%s&sort=recently_updated)**", dev, strings.ToLower(dev))
+}
+
 func WebhookAccept(img *utils.Img, staff *utils.User) error {
 	s, id, token, err := getSession(false)
 	if err != nil {
@@ -85,7 +90,7 @@ func WebhookAccept(img *utils.Img, staff *utils.User) error {
 					Fields: []*discordgo.MessageEmbedField{
 						{
 							Name:   "Developer",
-							Value:  fmt.Sprintf("**[@%s](https://www.github.com/%s/)**", u.Login, u.Login),
+							Value:  getDevHyperlink(u.Login),
 							Inline: true,
 						},
 						{
@@ -132,7 +137,7 @@ func WebhookStaffSubmit(img *utils.Img) error {
 					Fields: []*discordgo.MessageEmbedField{
 						{
 							Name:   "Developer",
-							Value:  fmt.Sprintf("**[@%s](https://www.github.com/%s/)**", u.Login, u.Login),
+							Value:  getDevHyperlink(u.Login),
 							Inline: true,
 						},
 					},
