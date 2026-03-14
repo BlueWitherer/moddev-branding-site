@@ -58,7 +58,7 @@ function Pending() {
     const handleDelete = async (id: number) => {
         try {
             const res = await fetch(`/brand/delete?id=${id}`, {
-                method: 'POST'
+                method: 'DELETE'
             });
             if (res.ok) {
                 setMessage({ type: 'success', text: 'Image deleted successfully!' });
