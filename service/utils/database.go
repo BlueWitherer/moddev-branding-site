@@ -10,6 +10,26 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+type ModLinks struct {
+	Source string `json:"source"`
+}
+
+type ModDeveloper struct {
+	Username string `json:"username"`
+	IsOwner  bool   `json:"is_owner"`
+}
+
+type Mod struct {
+	ID         string         `json:"id"`
+	Developers []ModDeveloper `json:"developers"`
+	Links      ModLinks       `json:"links"`
+}
+
+type ModRequest struct {
+	Error   string `json:"error"`
+	Payload Mod    `json:"payload"`
+}
+
 // Concurrent database connection
 var data *sql.DB
 

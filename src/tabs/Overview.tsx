@@ -1,23 +1,18 @@
 import { useState, useEffect } from 'react';
-import type { User } from "../Include.mts";
+
+import type { Image, User } from "../Include.mts";
+
 import { Box, Paper, Typography, Grid, Card, CardMedia, CardContent, Chip } from "@mui/material";
+
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 
 interface OverviewProps {
     user: User | null;
-}
-
-interface Img {
-    id: number;
-    user_id: number;
-    image_url: string;
-    created_at: string;
-    pending: boolean;
-}
+};
 
 function Overview({ user }: OverviewProps) {
-    const [images, setImages] = useState<Img[]>([]);
+    const [images, setImages] = useState<Image[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -29,17 +24,15 @@ function Overview({ user }: OverviewProps) {
                     setImages(data || []);
                 } else {
                     console.error("Failed to fetch user images");
-                }
+                };
             } catch (error) {
                 console.error(error);
             } finally {
                 setLoading(false);
-            }
+            };
         };
 
-        if (user) {
-            fetchImages();
-        }
+        if (user) fetchImages();
     }, [user]);
 
     return (
@@ -50,9 +43,8 @@ function Overview({ user }: OverviewProps) {
 
             <Paper sx={{ p: 4, bgcolor: 'rgba(0,0,0,0.4)', color: 'white', minHeight: 200 }}>
                 <Typography variant="h6" gutterBottom sx={{ mb: 3, textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)', pb: 1 }}>
-                    Your Brandings
+                    Your Branding
                 </Typography>
-
                 {loading ? (
                     <Typography textAlign="center">Loading...</Typography>
                 ) : images.length === 0 ? (
@@ -61,7 +53,7 @@ function Overview({ user }: OverviewProps) {
                         Go to the Submission tab to upload one!
                     </Typography>
                 ) : (
-                    <Grid container spacing={3}>
+                    <Grid container spacing={3} sx={{ justifyContent: 'center', alignItems: 'center' }}>
                         {images.map((img) => (
                             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={img.id}>
                                 <Card sx={{
@@ -69,7 +61,7 @@ function Overview({ user }: OverviewProps) {
                                     border: '1px solid rgba(255, 255, 255, 0.1)',
                                     height: '100%',
                                     display: 'flex',
-                                    flexDirection: 'column'
+                                    flexDirection: 'column',
                                 }}>
                                     <Box sx={{ position: 'relative', pt: '56.25%' /* 16:9 aspect ratio */ }}>
                                         <CardMedia
@@ -109,7 +101,7 @@ function Overview({ user }: OverviewProps) {
                                     </Box>
                                     <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
                                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                                            Submitted: {new Date(img.created_at).toLocaleDateString()}
+                                            Submitted: {new Date(img.created_at || '').toLocaleDateString()}
                                         </Typography>
                                     </CardContent>
                                 </Card>

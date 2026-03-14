@@ -7,10 +7,12 @@ import { useNavigate } from "react-router-dom";
 import type { User } from "./Include.mts";
 import { Avatar, Box, Tabs, Tab, Typography, IconButton, useTheme, useMediaQuery, Select, MenuItem, FormControl, Button, Dialog, DialogTitle, DialogContent } from "@mui/material";
 
-
 import type { SelectChangeEvent } from "@mui/material";
 
 import LogoutIcon from '@mui/icons-material/Logout';
+import Diversity1Icon from '@mui/icons-material/Diversity1';
+
+import { SiYoutube, SiGithub, SiX, SiGeode } from "react-icons/si";
 
 import Overview from "./tabs/Overview";
 import Submission from "./tabs/Submission";
@@ -221,7 +223,7 @@ function Dashboard() {
                         fontSize: '0.75rem',
                     }}
                 >
-                    CREDITS
+                    <Diversity1Icon />
                 </Button>
             </Box>
 
@@ -245,25 +247,12 @@ function Dashboard() {
                     }
                 }}
             >
-                <DialogTitle id="credits-modal-title" sx={{ mb: 1, color: 'rgba(253, 128, 236, 1)', fontFamily: "'Russo One', sans-serif", textAlign: 'center' }}>
+                <DialogTitle id="credits-modal-title" sx={{ mb: 1, color: 'rgba(255, 255, 255, 1)', fontFamily: "'Russo One', sans-serif", textAlign: 'center' }}>
                     Credits
                 </DialogTitle>
 
                 <DialogContent>
                     <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', mt: 1 }}>
-                        {/* ArcticWoof */}
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <Avatar
-                                src="https://avatars.githubusercontent.com/u/56347227"
-                                sx={{ width: '70%', height: '70%', mb: 1, cursor: 'pointer' }}
-                                onClick={() => window.open("https://github.com/DumbCaveSpider", "_blank")}
-                            />
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>ArcticWoof</Typography>
-                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                Frontend/UI/UX
-                            </Typography>
-                        </Box>
-
                         {/* Cheeseworks */}
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <Avatar
@@ -279,12 +268,64 @@ function Dashboard() {
                                 Geode Mod
                             </Typography>
                         </Box>
+
+                        {/* ArcticWoof */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Avatar
+                                src="https://avatars.githubusercontent.com/u/56347227"
+                                sx={{ width: '70%', height: '70%', mb: 1, cursor: 'pointer' }}
+                                onClick={() => window.open("https://github.com/DumbCaveSpider", "_blank")}
+                            />
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>ArcticWoof</Typography>
+                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                Frontend/UI/UX
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 1 }}>
+                        <Button variant="contained" href="https://www.geode-sdk.org/mods/cheeseworks.moddevbranding" target="_blank" sx={{ mt: 2, width: '62.5%', bgcolor: 'rgb(253, 128, 241)' }}>
+                            <SiGeode className="simple-icon" /> Get The Mod
+                        </Button>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 1 }}>
+                        <IconButton
+                            className="social-button"
+                            component="a"
+                            href="https://www.youtube.com/@cheese_works/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="YouTube"
+                        >
+                            <SiYoutube />
+                        </IconButton>
+
+                        <IconButton
+                            className="social-button"
+                            component="a"
+                            href="https://www.github.com/BlueWitherer/moddev-branding-site/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="GitHub"
+                        >
+                            <SiGithub />
+                        </IconButton>
+
+                        <IconButton
+                            className="social-button"
+                            component="a"
+                            href="https://www.x.com/chris_rhatt/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="X"
+                        >
+                            <SiX />
+                        </IconButton>
                     </Box>
                     <Button variant="contained" color="error" onClick={handleCloseCredits} sx={{ mt: 2, width: '100%' }}>
                         Close
                     </Button>
                 </DialogContent>
-            </Dialog>
+            </Dialog >
         </>
     );
 };

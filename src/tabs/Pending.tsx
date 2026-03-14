@@ -3,14 +3,11 @@ import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, Ta
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-interface Img {
-    id: number;
-    user_id: number;
-    image_url: string;
-    created_at: string;
-    pending: boolean;
+import type { Image } from '../Include.mjs';
+
+interface Img extends Image {
     login: string;
-}
+};
 
 function Pending() {
     const [images, setImages] = useState<Img[]>([]);
@@ -19,19 +16,25 @@ function Pending() {
     const fetchImages = async () => {
         try {
             const res = await fetch('/brand/pending');
-            if (res.ok) {
-                const data = await res.json();
-                setImages(data || []);
-            } else {
+            if (!res.ok) {
                 console.error("Failed to fetch pending images");
-            }
+                return [];
+            };
+
+            return await res.json();
         } catch (error) {
             console.error(error);
-        }
+            return [];
+        };
     };
 
     useEffect(() => {
-        fetchImages();
+        const load = async () => {
+            const data = await fetchImages();
+            setImages(data);
+        };
+
+        load();
     }, []);
 
     const handleAccept = async (id: number) => {
@@ -77,7 +80,7 @@ function Pending() {
     return (
         <Box sx={{ maxWidth: 1000, mx: 'auto', p: 3 }}>
             <Typography variant="h4" gutterBottom sx={{ mb: 4, textAlign: 'center', fontFamily: "'Russo One', sans-serif" }}>
-                Pending Brandings
+                Pending Branding
             </Typography>
             <TableContainer component={Paper} sx={{ bgcolor: 'rgba(0,0,0,0.4)', color: 'white' }}>
                 <Table>
@@ -96,7 +99,7 @@ function Pending() {
                             <TableRow key={img.id} hover sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}>
                                 <TableCell sx={{ color: 'white' }}>{img.id}</TableCell>
                                 <TableCell sx={{ color: 'white' }}>{img.user_id}</TableCell>
-                                <TableCell sx={{ color: 'white' }}>{img.login}</TableCell>
+                                <TableCell sx={{ color: 'white' }}><a href={`https://www.github.com/${img.login}/`} target="_blank">{img.login}</a></TableCell>
                                 <TableCell sx={{ color: 'white' }}>
                                     <Box
                                         component="img"
@@ -113,7 +116,7 @@ function Pending() {
                                     />
                                 </TableCell>
                                 <TableCell sx={{ color: 'white' }}>
-                                    {new Date(img.created_at).toLocaleString()}
+                                    {new Date(img.created_at || "").toLocaleString()}
                                 </TableCell>
                                 <TableCell sx={{ color: 'white' }}>
                                     <Box sx={{ display: 'flex', gap: 1 }}>

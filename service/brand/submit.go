@@ -10,6 +10,7 @@ import (
 
 	"service/access"
 	"service/database"
+	"service/discord"
 	"service/log"
 )
 
@@ -94,15 +95,6 @@ func init() {
 				return
 			}
 
-			if user.IsAdmin || user.IsStaff || user.Verified {
-				newImg, err := database.ApproveImage(imgID)
-				if err != nil {
-					log.Error("Failed to auto-approve new img by verified user: %s", err.Error())
-				} else {
-					log.Info("Auto-approved img %s (%v) by verified user %s (%s)", newImg.ImageURL, newImg.ID, user.Login, user.ID)
-				}
-			}
-
 			var out struct {
 				ID       uint64 `json:"id"`
 				ImageURL string `json:"image_url"`
@@ -112,6 +104,29 @@ func init() {
 			out.ImageURL = imageURL
 
 			log.Info("Saved img to %s, id=%v, user_id=%s", dstPath, imgID, uid)
+
+			img, err := database.GetImage(imgID)
+			if err != nil {
+				log.Warn(err.Error())
+			} else {
+				err = discord.WebhookStaffSubmit(img)
+				if err != nil {
+					log.Warn(err.Error())
+				}
+			}
+
+			if user.IsAdmin || user.IsStaff || user.Verified {
+				newImg, err := database.ApproveImage(imgID)
+				if err != nil {
+					log.Error("Failed to auto-approve new img by verified user: %s", err.Error())
+				} else {
+					log.Info("Auto-approved img %s (%v) by verified user %s (%s)", newImg.ImageURL, newImg.ID, user.Login, user.ID)
+					err = discord.WebhookAccept(img, nil)
+					if err != nil {
+						log.Warn(err.Error())
+					}
+				}
+			}
 
 			w.WriteHeader(http.StatusOK)
 			if err := json.NewEncoder(w).Encode(out); err != nil {

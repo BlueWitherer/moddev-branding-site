@@ -5,8 +5,9 @@ import './index.css';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import GitHubIcon from '@mui/icons-material/GitHub';
 import { Box, Paper, Typography, Button } from '@mui/material';
+
+import { SiGithub } from "react-icons/si";
 
 function Login() {
     const navigate = useNavigate();
@@ -72,7 +73,7 @@ function Login() {
                 }}
             >
                 <Box sx={{ mb: 3 }}>
-                    <a href='https://www.geode-sdk.org/mods/cheeseworks.moddevbranding' target="_blank">
+                    <a href='https://www.geode-sdk.org/mods/cheeseworks.moddevbranding' target="_blank" aria-label="Download Geode Mod">
                         <img src='/icon.png' className="logo" alt="Mod Developer Branding logo" style={{ height: '8em' }} />
                     </a>
                 </Box>
@@ -89,7 +90,7 @@ function Login() {
                     variant="contained"
                     size="large"
                     onClick={handleLogin}
-                    startIcon={<GitHubIcon />}
+                    startIcon={<SiGithub />}
                     sx={{
                         borderRadius: '50px',
                         px: 5,
