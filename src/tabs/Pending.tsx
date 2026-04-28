@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-
 import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Snackbar, Alert } from "@mui/material";
-
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
+
 import type { Image } from '../Include.mjs';
 
 interface Img extends Image {
@@ -48,6 +48,24 @@ function Pending() {
             } else {
                 const errorText = await res.text();
                 setMessage({ type: 'error', text: `Failed to accept: ${errorText}` });
+            }
+        } catch (error) {
+            setMessage({ type: 'error', text: 'An unexpected error occurred.' });
+            console.error(error);
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        try {
+            const res = await fetch(`/brand/delete?id=${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                setMessage({ type: 'success', text: 'Image deleted successfully!' });
+                fetchImages();
+            } else {
+                const errorText = await res.text();
+                setMessage({ type: 'error', text: `Failed to delete: ${errorText}` });
             }
         } catch (error) {
             setMessage({ type: 'error', text: 'An unexpected error occurred.' });
@@ -101,22 +119,34 @@ function Pending() {
                                     {new Date(img.created_at || "").toLocaleString()}
                                 </TableCell>
                                 <TableCell sx={{ color: 'white' }}>
-                                    <Button
-                                        variant="contained"
-                                        color="success"
-                                        size="small"
-                                        startIcon={<CheckCircleIcon />}
-                                        onClick={() => handleAccept(img.id)}
-                                        sx={{ textTransform: 'none' }}
-                                    >
-                                        Accept
-                                    </Button>
+                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                        <Button
+                                            variant="contained"
+                                            color="success"
+                                            size="small"
+                                            startIcon={<CheckCircleIcon />}
+                                            onClick={() => handleAccept(img.id)}
+                                            sx={{ textTransform: 'none' }}
+                                        >
+                                            Accept
+                                        </Button>
+                                        <Button
+                                            variant="contained"
+                                            color="error"
+                                            size="small"
+                                            startIcon={<DeleteIcon />}
+                                            onClick={() => handleDelete(img.id)}
+                                            sx={{ textTransform: 'none' }}
+                                        >
+                                            Reject
+                                        </Button>
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ))}
                         {images.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={5} align="center" sx={{ color: 'rgba(255,255,255,0.7)', py: 4 }}>
+                                <TableCell colSpan={6} align="center" sx={{ color: 'rgba(255,255,255,0.7)', py: 4 }}>
                                     No pending images found.
                                 </TableCell>
                             </TableRow>
