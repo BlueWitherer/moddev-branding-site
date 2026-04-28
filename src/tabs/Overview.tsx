@@ -46,9 +46,9 @@ function Overview({ user }: OverviewProps) {
                     Your Branding
                 </Typography>
                 {loading ? (
-                    <Typography textAlign="center">Loading...</Typography>
+                    <Typography sx={{ textAlign: 'center' }}>Loading...</Typography>
                 ) : images.length === 0 ? (
-                    <Typography textAlign="center" sx={{ color: 'rgba(255,255,255,0.7)', py: 4 }}>
+                    <Typography sx={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', py: 4 }}>
                         You haven't submitted any branding images yet.
                         Go to the Submission tab to upload one!
                     </Typography>

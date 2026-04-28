@@ -80,7 +80,7 @@ function Settings({ user }: SettingsProps) {
                                     color: 'rgba(255, 255, 255, 0.5)'
                                 }
                             }}
-                            href="https://www.geode-sdk.org/mods/cheeseworks.moddevbranding"
+                            href="https://geode-sdk.org/mods/cheeseworks.moddevbranding"
                             target="_blank">
                             <SiGeode className="simple-icon" /> Download
                         </Button>

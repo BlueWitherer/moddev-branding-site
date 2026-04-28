@@ -8,11 +8,12 @@ import type { User } from "./Include.mts";
 import { Avatar, Box, Tabs, Tab, Typography, IconButton, useTheme, useMediaQuery, Select, MenuItem, FormControl, Button, Dialog, DialogTitle, DialogContent } from "@mui/material";
 
 import type { SelectChangeEvent } from "@mui/material";
+import type { MenuProps } from '@mui/material/Menu';
 
 import LogoutIcon from '@mui/icons-material/Logout';
 import Diversity1Icon from '@mui/icons-material/Diversity1';
 
-import { SiYoutube, SiGithub, SiX, SiGeode } from "react-icons/si";
+import { SiYoutube, SiGithub, SiX, SiKofi, SiPatreon, SiGeode } from "react-icons/si";
 
 import Overview from "./tabs/Overview";
 import Submission from "./tabs/Submission";
@@ -119,8 +120,8 @@ function Dashboard() {
                                 MenuProps={{
                                     PaperProps: {
                                         className: 'dashboard-menu-paper'
-                                    }
-                                }}
+                                    },
+                                } as Partial<MenuProps>}
                             >
                                 <MenuItem value={0}>Dashboard</MenuItem>
                                 <MenuItem value={1}>Submission</MenuItem>
@@ -283,7 +284,7 @@ function Dashboard() {
                         </Box>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 1 }}>
-                        <Button variant="contained" href="https://www.geode-sdk.org/mods/cheeseworks.moddevbranding" target="_blank" sx={{ mt: 2, width: '62.5%', bgcolor: 'rgb(253, 128, 241)' }}>
+                        <Button variant="contained" href="https://geode-sdk.org/mods/cheeseworks.moddevbranding" target="_blank" sx={{ mt: 2, width: '62.5%', bgcolor: 'rgb(253, 128, 241)' }}>
                             <SiGeode className="simple-icon" /> Get The Mod
                         </Button>
                     </Box>
@@ -308,6 +309,28 @@ function Dashboard() {
                             aria-label="GitHub"
                         >
                             <SiGithub />
+                        </IconButton>
+
+                        <IconButton
+                            className="social-button"
+                            component="a"
+                            href="https://kofi.cheeseworks.gay/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Kofi"
+                        >
+                            <SiKofi />
+                        </IconButton>
+
+                        <IconButton
+                            className="social-button"
+                            component="a"
+                            href="https://patreon.cheeseworks.gay/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Patreon"
+                        >
+                            <SiPatreon />
                         </IconButton>
 
                         <IconButton

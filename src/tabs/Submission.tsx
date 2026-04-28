@@ -60,7 +60,7 @@ function Submission() {
             </Typography>
 
             <Paper sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, bgcolor: 'rgba(0,0,0,0.4)', color: 'white' }}>
-                <Typography variant="body1" textAlign="center">
+                <Typography component="span" variant="body1" sx={{ textAlign: 'center' }}>
                     Upload your custom branding image here. It will be reviewed by admins and staff.
                 </Typography>
 
@@ -127,7 +127,7 @@ function Submission() {
                                 }}
                             />
                         </Box>
-                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                        <Typography component="span" sx={{ variant: 'caption', display: 'block', mt: 1 }}>
                             {file?.name}
                         </Typography>
                     </Box>
