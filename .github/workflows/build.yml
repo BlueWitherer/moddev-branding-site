@@ -54,13 +54,13 @@ jobs:
               run: |
                   set -euo pipefail
                   test -d build-output/dist
-                  test -f build-output/service
+                  test -f build-output/server
                   rm -rf release dist.zip
                   mkdir release
                   (cd build-output && zip -r ../dist.zip dist)
-                  cp build-output/service release/service
+                  cp build-output/server release/server
                   cp dist.zip release/dist.zip
-                  chmod +x release/service
+                  chmod +x release/server
 
             - name: Upload release artifact
               uses: actions/upload-artifact@v4
