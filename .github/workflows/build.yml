@@ -1,4 +1,5 @@
 name: Mod Dev Branding Site
+
 on:
     push:
         branches: ["**"]
@@ -32,6 +33,16 @@ jobs:
                   GOOS: linux
                   GOARCH: amd64
                   CGO_ENABLED: 0
+
+            - name: Stage build output
+              run: |
+                  set -euo pipefail
+                  test -d service/dist
+                  test -f server
+                  mkdir -p artifacts/build
+                  cp -r service/dist artifacts/build/dist
+                  cp server artifacts/build/server
+                  chmod +x artifacts/build/server
 
             - name: Upload build artifact
               uses: actions/upload-artifact@v4
