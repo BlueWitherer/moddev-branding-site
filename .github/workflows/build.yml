@@ -33,16 +33,6 @@ jobs:
                   GOARCH: amd64
                   CGO_ENABLED: 0
 
-            - name: Stage build output
-              run: |
-                  set -euo pipefail
-                  test -d dist
-                  test -f build/service
-                  mkdir -p artifacts/build
-                  cp -r dist artifacts/build/dist
-                  cp build/service artifacts/build/service
-                  chmod +x artifacts/build/service
-
             - name: Upload build artifact
               uses: actions/upload-artifact@v4
               with:
