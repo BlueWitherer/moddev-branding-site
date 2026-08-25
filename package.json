@@ -9,7 +9,7 @@
         "lint": "eslint .",
         "preview": "vite preview",
         "start": "npm run build && cd ./build && service.exe",
-        "production": "npm run build && cd ./build && ./service"
+        "production": "./service"
     },
     "dependencies": {
         "@emotion/react": "^11.14.0",

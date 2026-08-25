@@ -62,13 +62,14 @@ func main() {
 	port := os.Getenv("WEB_PORT")
 	if port == "" {
 		log.Error("WEB_PORT is not set")
+		port = "8080"
 	}
 
 	srv := &http.Server{Addr: fmt.Sprintf(":%s", port)}
 
 	// SPA fallback
 	log.Debug("Setting up SPA fallback for client-side routing")
-	staticDir := "../dist"
+	staticDir := "./dist"
 	fs := http.FileServer(http.Dir(staticDir))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

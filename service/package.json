@@ -4,8 +4,8 @@
     "description": "Performant service that runs the website.",
     "author": "Cheeseworks",
     "scripts": {
-        "build": "go build -o ../build/",
+        "build": "go build -o ../",
         "dev": "go run ./",
-        "start": "cd ../build && service.exe"
+        "start": "cd ../ && service.exe"
     }
 }
