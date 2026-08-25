@@ -37,10 +37,10 @@ jobs:
             - name: Stage build output
               run: |
                   set -euo pipefail
-                  test -d service/dist
+                  test -d dist
                   test -f server
                   mkdir -p artifacts/build
-                  cp -r service/dist artifacts/build/dist
+                  cp -r dist artifacts/build/dist
                   cp server artifacts/build/server
                   chmod +x artifacts/build/server
 
