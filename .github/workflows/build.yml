@@ -1,6 +1,4 @@
 name: Mod Dev Branding Site
-# mainly for testing purposes
-
 on:
     push:
         branches: ["**"]
@@ -9,100 +7,110 @@ on:
 
 jobs:
     build:
-        name: Build site source
+        name: Build Linux service and site
         runs-on: ubuntu-latest
 
         steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
+            - uses: actions/checkout@v4
 
             - name: Set up Go
               uses: actions/setup-go@v4
               with:
-                  go-version: "1.25"
+                  go-version: "1.27"
 
             - name: Set up Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: "22"
+                  node-version: "26"
 
-            - name: Install Node dependencies
+            - name: Install dependencies
               run: npm ci
 
-            - name: Build project (tsc, vite, service)
+            - name: Build Vite site and Debian service binary
               run: npm run build
+              env:
+                  GOOS: linux
+                  GOARCH: amd64
+                  CGO_ENABLED: 0
 
-            - name: Ensure service binary is executable
+            - name: Stage build output
               run: |
-                  if [ -f build/service ]; then chmod +x build/service; fi
+                  set -euo pipefail
+                  test -d dist
+                  test -f build/service
+                  mkdir -p artifacts/build
+                  cp -r dist artifacts/build/dist
+                  cp build/service artifacts/build/service
+                  chmod +x artifacts/build/service
 
-            - name: Upload frontend artifact
-              run: |
-                  rm -rf artifacts/frontend-dist
-                  mkdir -p artifacts/frontend-dist/dist
-                  cp -r dist/* artifacts/frontend-dist/dist/
-
-            - name: Upload frontend artifact
+            - name: Upload build artifact
               uses: actions/upload-artifact@v4
               with:
-                  name: frontend-dist
-                  path: artifacts/frontend-dist
-
-            - name: Upload service binary artifact
-              run: |
-                  rm -rf artifacts/service-binary
-                  mkdir -p artifacts/service-binary
-                  cp build/service artifacts/service-binary/service
-
-            - name: Upload service binary artifact
-              uses: actions/upload-artifact@v4
-              with:
-                  name: service-binary
-                  path: artifacts/service-binary
+                  name: build-output
+                  path: artifacts/build
 
     package:
-        name: Package release
+        name: Package Debian release
         runs-on: ubuntu-latest
         needs: build
 
         steps:
-            - name: Download frontend artifact
-              uses: actions/download-artifact@v4
+            - uses: actions/download-artifact@v4
               with:
-                  name: frontend-dist
-                  path: frontend-dist
+                  name: build-output
+                  path: build-output
 
-            - name: Download service artifact
-              uses: actions/download-artifact@v4
-              with:
-                  name: service-binary
-                  path: service-binary
-
-            - name: Reapply executable bit to service binary
-              run: chmod +x service-binary/service
-
-            - name: Create release bundle
+            - name: Create release files
               run: |
                   set -euo pipefail
-                  rm -rf release
-                  mkdir -p release
+                  test -d build-output/dist
+                  test -f build-output/service
+                  rm -rf release dist.zip
+                  mkdir release
+                  (cd build-output && zip -r ../dist.zip dist)
+                  cp build-output/service release/service
+                  cp dist.zip release/dist.zip
+                  chmod +x release/service
 
-                  if [ -d frontend-dist/dist ]; then
-                    cp -r frontend-dist/dist release/dist
-                  else
-                    echo "frontend-dist/dist not found" >&2
-                    exit 1
-                  fi
-
-                  if [ -f service-binary/service ]; then
-                    cp service-binary/service release/
-                  else
-                    echo "service-binary/service not found" >&2
-                    exit 1
-                  fi
-
-            - name: Upload artifact
+            - name: Upload release artifact
               uses: actions/upload-artifact@v4
               with:
                   name: release
                   path: release
+
+    nightly:
+        name: Nightly Release
+        runs-on: ubuntu-latest
+        needs: package
+        if: ${{ github.ref_name == github.event.repository.default_branch }}
+        permissions:
+            contents: write
+
+        steps:
+            - name: Download release artifact
+              uses: actions/download-artifact@v4
+              with:
+                  name: release
+                  path: artifacts/release
+
+            - name: Get latest release tag
+              id: getrelease
+              env:
+                  REPOSITORY: ${{ github.repository }}
+                  DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+              run: |
+                  latest_tag=$(curl --silent --show-error "https://api.github.com/repos/${REPOSITORY}/releases/latest" | jq -r '.tag_name // empty')
+                  echo "tag=${latest_tag:-$DEFAULT_BRANCH}" >> "$GITHUB_OUTPUT"
+
+            - name: Publish nightly release
+              uses: andelf/nightly-release@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  tag_name: nightly
+                  name: "Development Release"
+                  body: |
+                      **Development build for commit ${{ github.sha }}**.
+                      > [`View Current Changes`](${{ github.event.repository.html_url }}/compare/${{ steps.getrelease.outputs.tag }}...nightly)
+                  files: |
+                      artifacts/release/*
