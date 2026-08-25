@@ -8,8 +8,8 @@
         "build": "tsc -b && vite build && cd ./service && npm run build",
         "lint": "eslint .",
         "preview": "vite preview",
-        "start": "npm run build && cd ./build && service.exe",
-        "production": "./service"
+        "start": "npm run build && cd ./build && server.exe",
+        "production": "./server"
     },
     "dependencies": {
         "@emotion/react": "^11.14.0",
