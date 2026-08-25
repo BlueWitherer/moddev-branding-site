@@ -279,7 +279,7 @@ func BanUser(id uint64) (*utils.User, error) {
 		return nil, err
 	}
 
-	imgDir := filepath.Join("..", "cdn", fmt.Sprintf("%d.webp", img.UserID))
+	imgDir := filepath.Join("cdn", fmt.Sprintf("%d.webp", img.UserID))
 	err = os.Remove(imgDir)
 	if err != nil {
 		return nil, err

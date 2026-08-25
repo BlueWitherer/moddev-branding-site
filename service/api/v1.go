@@ -152,7 +152,7 @@ func init() {
 				}
 
 				fileName := fmt.Sprintf("%d.webp", user.ID)
-				dstPath := filepath.Join("..", "cdn", fileName)
+				dstPath := filepath.Join("cdn", fileName)
 
 				log.Info("Getting brand image %s for %s", dstPath, user.Login)
 

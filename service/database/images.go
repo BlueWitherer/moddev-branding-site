@@ -360,7 +360,7 @@ func DeleteImage(imgId uint64) (*utils.Img, error) {
 		return img, err
 	}
 
-	adDir := filepath.Join("..", "cdn", fmt.Sprintf("%d.webp", img.UserID))
+	adDir := filepath.Join("cdn", fmt.Sprintf("%d.webp", img.UserID))
 	err = os.Remove(adDir)
 	if err != nil {
 		return img, err

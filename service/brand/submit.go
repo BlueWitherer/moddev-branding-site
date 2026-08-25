@@ -57,7 +57,7 @@ func init() {
 			defer file.Close()
 
 			// Create target folder
-			targetDir := filepath.Join("..", "cdn")
+			targetDir := filepath.Join("cdn")
 			err = os.MkdirAll(targetDir, os.ModePerm)
 			if err != nil {
 				log.Error("Failed to get directory %s", err.Error())
