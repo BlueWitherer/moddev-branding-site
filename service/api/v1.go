@@ -1,7 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/png"
 	"io"
 	"net/http"
 	"net/url"
@@ -10,9 +13,12 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/image/webp"
+
 	"service/database"
 	"service/log"
 
+	gwebp "github.com/gen2brain/webp"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -30,6 +36,30 @@ func getGitUsername(repoUrl string) (string, error) {
 	}
 
 	return parts[0], nil
+}
+
+func writeAsPNG(w io.Writer, src io.Reader, decode func(io.Reader) (image.Image, error)) error {
+	img, err := decode(src)
+	if err != nil {
+		return fmt.Errorf("decode source image: %w", err)
+	}
+	return png.Encode(w, img)
+}
+
+func writeAsWebp(w io.Writer, src io.Reader, decode func(io.Reader) (image.Image, error)) error {
+	img, err := decode(src)
+	if err != nil {
+		return fmt.Errorf("decode source image: %w", err)
+	}
+	return gwebp.Encode(w, img, gwebp.Options{Quality: 80})
+}
+
+func decodeWebp(r io.Reader) (image.Image, error) {
+	return webp.Decode(r)
+}
+
+func decodePng(r io.Reader) (image.Image, error) {
+	return png.Decode(r)
 }
 
 func init() {
@@ -63,6 +93,7 @@ func init() {
 			modId := query.Get("mod")
 
 			fmtParam := query.Get("fmt")
+			wantWebp := fmtParam == "webp"
 
 			user, err := database.GetUserFromLogin(dev)
 			if err != nil {
@@ -120,17 +151,25 @@ func init() {
 					}
 					defer resp.Body.Close()
 
-					if fmtParam == "webp" {
-						header.Set("Content-Type", "image/webp")
-					} else {
-						header.Set("Content-Type", "image/png")
+					body, err := io.ReadAll(resp.Body)
+					if err != nil {
+						log.Error("Failed to read fallback image: %v", err)
+						http.Error(w, "Failed to read image", http.StatusInternalServerError)
+						return
 					}
 
-					w.WriteHeader(http.StatusOK)
-					if _, err := io.Copy(w, resp.Body); err != nil {
-						log.Error("Failed to stream fallback image: %v", err)
-						http.Error(w, "Failed to stream image", http.StatusInternalServerError)
-						return
+					if wantWebp {
+						header.Set("Content-Type", "image/webp")
+						w.WriteHeader(http.StatusOK)
+						if err := writeAsWebp(w, bytes.NewReader(body), decodePng); err != nil {
+							log.Error("Failed to convert fallback image to webp: %v", err)
+						}
+					} else {
+						header.Set("Content-Type", "image/png")
+						w.WriteHeader(http.StatusOK)
+						if _, err := w.Write(body); err != nil {
+							log.Error("Failed to stream fallback image: %v", err)
+						}
 					}
 
 					return
@@ -164,29 +203,21 @@ func init() {
 				}
 				defer f.Close()
 
-				if fmtParam == "webp" {
+				if wantWebp {
 					header.Set("Content-Type", "image/webp")
-
 					w.WriteHeader(http.StatusOK)
 					if _, err := io.Copy(w, f); err != nil {
 						log.Error("Failed to stream image: %s", err.Error())
-						http.Error(w, "Failed to stream image", http.StatusInternalServerError)
-						return
 					}
-
-					return
-				} else {
-					header.Set("Content-Type", "image/png")
-
-					w.WriteHeader(http.StatusOK)
-					if _, err := io.Copy(w, f); err != nil {
-						log.Error("Failed to stream image: %s", err.Error())
-						http.Error(w, "Failed to stream image", http.StatusInternalServerError)
-						return
-					}
-
 					return
 				}
+
+				header.Set("Content-Type", "image/png")
+				w.WriteHeader(http.StatusOK)
+				if err := writeAsPNG(w, f, decodeWebp); err != nil {
+					log.Error("Failed to convert image to png: %s", err.Error())
+				}
+				return
 			} else {
 				log.Error("Failed to process user")
 				http.Error(w, "Failed to process user", http.StatusInternalServerError)

@@ -3,16 +3,43 @@ package brand
 import (
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	_ "golang.org/x/image/webp" // registers webp decoding with image.Decode
+
 	"service/access"
 	"service/database"
 	"service/discord"
 	"service/log"
+
+	"github.com/gen2brain/webp"
 )
+
+func convertToWebp(src io.Reader, dstPath string) error {
+	img, _, err := image.Decode(src)
+	if err != nil {
+		return fmt.Errorf("decode image: %w", err)
+	}
+
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		return fmt.Errorf("create dst: %w", err)
+	}
+	defer dst.Close()
+
+	if err := webp.Encode(dst, img, webp.Options{Quality: 80}); err != nil {
+		os.Remove(dstPath)
+		return fmt.Errorf("webp encode: %w", err)
+	}
+
+	return nil
+}
 
 func init() {
 	http.HandleFunc("/brand/submit", func(w http.ResponseWriter, r *http.Request) {
@@ -44,10 +71,12 @@ func init() {
 				return
 			}
 
-			// Parse form with 10MB limit
-			r.ParseMultipartForm(10 << 20)
+			if err := r.ParseMultipartForm(10 << 20); err != nil {
+				log.Error("Failed to parse form: %s", err.Error())
+				http.Error(w, "Invalid form data", http.StatusBadRequest)
+				return
+			}
 
-			// Get image file
 			file, _, err := r.FormFile("image-upload")
 			if err != nil {
 				log.Error("Image not found: %s", err.Error())
@@ -56,29 +85,19 @@ func init() {
 			}
 			defer file.Close()
 
-			// Create target folder
-			targetDir := filepath.Join("cdn")
-			err = os.MkdirAll(targetDir, os.ModePerm)
-			if err != nil {
+			targetDir := filepath.Join("/", "cdn")
+			if err := os.MkdirAll(targetDir, os.ModePerm); err != nil {
 				log.Error("Failed to get directory %s", err.Error())
 				http.Error(w, "Failed to get directory", http.StatusInternalServerError)
 				return
 			}
 
 			fileName := fmt.Sprintf("%d.webp", uid)
-			dstPath := filepath.Join(targetDir, fileName)
+			dstPath := filepath.Join(targetDir, filepath.Clean(fileName))
 
-			dst, err := os.Create(dstPath)
-			if err != nil {
-				log.Error("Failed to save image: %s", err.Error())
-				http.Error(w, "Failed to save image", http.StatusInternalServerError)
-				return
-			}
-			defer dst.Close()
-
-			if _, err := io.Copy(dst, file); err != nil {
-				log.Error(err.Error())
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+			if err := convertToWebp(file, dstPath); err != nil {
+				log.Error("Failed to convert image: %s", err.Error())
+				http.Error(w, "Failed to convert image format", http.StatusBadRequest)
 				return
 			}
 
