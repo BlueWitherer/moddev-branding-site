@@ -85,7 +85,7 @@ func init() {
 			}
 			defer file.Close()
 
-			targetDir := filepath.Join("/", "cdn")
+			targetDir := filepath.Join("cdn")
 			if err := os.MkdirAll(targetDir, os.ModePerm); err != nil {
 				log.Error("Failed to get directory %s", err.Error())
 				http.Error(w, "Failed to get directory", http.StatusInternalServerError)
@@ -93,7 +93,7 @@ func init() {
 			}
 
 			fileName := fmt.Sprintf("%d.webp", uid)
-			dstPath := filepath.Join(targetDir, filepath.Clean(fileName))
+			dstPath := filepath.Join("/", targetDir, fileName)
 
 			if err := convertToWebp(file, dstPath); err != nil {
 				log.Error("Failed to convert image: %s", err.Error())
