@@ -97,7 +97,7 @@ func main() {
 		header := w.Header()
 
 		requestedPath := strings.TrimPrefix(r.URL.Path, "/cdn/")
-		fullPath := filepath.Join("/", "cdn", filepath.Clean(requestedPath))
+		fullPath := filepath.Join("cdn", filepath.Clean(requestedPath))
 
 		header.Set("Content-Type", "image/webp")
 
