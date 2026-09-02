@@ -15,8 +15,7 @@ import (
 var session *discordgo.Session
 
 const (
-	WebName   = "Mod Developer Branding"
-	WebAvatar = "https://github.com/BlueWitherer/ModDevBranding/blob/master/logo.png?raw=true"
+	WebName = "Mod Developer Branding"
 )
 
 const (
@@ -82,8 +81,7 @@ func WebhookAccept(img *utils.Img, staff *utils.User) error {
 
 	go func() {
 		_, err = s.WebhookExecute(id, token, false, &discordgo.WebhookParams{
-			Username:  WebName,
-			AvatarURL: WebAvatar,
+			Username: WebName,
 			Embeds: []*discordgo.MessageEmbed{
 				{
 					Title: "✅ New Developer Branding",
@@ -129,8 +127,7 @@ func WebhookStaffSubmit(img *utils.Img) error {
 
 	go func() {
 		_, err = s.WebhookExecute(id, token, false, &discordgo.WebhookParams{
-			Username:  WebName,
-			AvatarURL: WebAvatar,
+			Username: WebName,
 			Embeds: []*discordgo.MessageEmbed{
 				{
 					Title: "🕑 Branding Submission",
