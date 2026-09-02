@@ -371,7 +371,7 @@ func DeleteImage(imgId uint64) (*utils.Img, error) {
 	return img, nil
 }
 
-var ModCache = cache.New(24*time.Hour, 1*time.Hour)
+var ModCache = cache.New(24*time.Hour, 8*time.Hour)
 
 func GetModCached(modID string) (*utils.Mod, error) {
 	if modID == "" {
