@@ -67,7 +67,6 @@ func main() {
 
 	srv := &http.Server{Addr: fmt.Sprintf(":%s", port)}
 
-	// SPA fallback
 	log.Debug("Setting up SPA fallback for client-side routing")
 	staticDir := "./dist"
 	fs := http.FileServer(http.Dir(staticDir))
@@ -120,7 +119,6 @@ func main() {
 		}
 	}()
 
-	// shutdown sequence
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit

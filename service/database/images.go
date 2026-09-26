@@ -13,13 +13,13 @@ import (
 	"service/utils"
 
 	"github.com/patrickmn/go-cache"
+	"github.com/samber/mo"
 )
 
 func newImages() *[]*utils.Img {
 	return new([]*utils.Img)
 }
 
-// Current imgs cache
 var currentImages *[]*utils.Img = nil
 var currentImagesSince time.Time = time.Now()
 
@@ -86,16 +86,17 @@ func deleteImage(id uint64) *[]*utils.Img {
 	return getImages()
 }
 
-func ApproveImage(id uint64) (*utils.Img, error) {
-	stmt, err := utils.PrepareStmt(dat, "UPDATE images SET pending = FALSE, created_at = NOW() WHERE id = ?")
-	if err != nil {
-		return nil, err
+func ApproveImage(id uint64) mo.Result[*utils.Img] {
+	stmtRes := utils.PrepareStmt(dat, "UPDATE images SET pending = FALSE, created_at = NOW() WHERE id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[*utils.Img](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
-	_, err = stmt.Exec(id)
+	_, err := stmt.Exec(id)
 	if err != nil {
-		return nil, err
+		return mo.Err[*utils.Img](err)
 	}
 
 	if img, found := findImage(id); found {
@@ -103,25 +104,29 @@ func ApproveImage(id uint64) (*utils.Img, error) {
 		currentImages = setImage(img)
 	}
 
-	return GetImage(id)
+	imgRes := GetImage(id)
+	if imgRes.IsError() {
+		return mo.Err[*utils.Img](imgRes.Error())
+	}
+	img := imgRes.MustGet()
+	return mo.Ok(img)
 }
 
-// upserts a brand image row
-func CreateImage(userId uint64, url string) (uint64, error) {
+func CreateImage(userId uint64, url string) mo.Result[uint64] {
 	if userId == 0 {
-		return 0, fmt.Errorf("missing img fields")
+		return mo.Err[uint64](fmt.Errorf("missing img fields"))
 	}
 
-	// Create new img - allow multiple imgs per user per type
-	stmt, err := utils.PrepareStmt(dat, "INSERT INTO images (user_id, image_url, pending) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE image_url = VALUES(image_url), pending = VALUES(pending), created_at = CURRENT_TIMESTAMP")
-	if err != nil {
-		return 0, err
+	stmtRes := utils.PrepareStmt(dat, "INSERT INTO images (user_id, image_url, pending) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE image_url = VALUES(image_url), pending = VALUES(pending), created_at = CURRENT_TIMESTAMP")
+	if stmtRes.IsError() {
+		return mo.Err[uint64](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
 	res, err := stmt.Exec(userId, url, true)
 	if err != nil {
-		return 0, err
+		return mo.Err[uint64](err)
 	}
 
 	if img, found := findImageFromUser(userId); found {
@@ -130,29 +135,32 @@ func CreateImage(userId uint64, url string) (uint64, error) {
 	}
 
 	last, err := res.LastInsertId()
-	return uint64(last), err
+	if err != nil {
+		return mo.Err[uint64](err)
+	}
+	return mo.Ok(uint64(last))
 }
 
-// fetches all imgs for a given user
-func ListAllImages() ([]*utils.Img, error) {
+func ListAllImages() mo.Result[[]*utils.Img] {
 	if time.Since(currentImagesSince) > 15*time.Minute {
 		currentImages = nil
 	}
 
 	if currentImages != nil && len(*currentImages) > 0 {
 		log.Debug("Returning cached imgs list")
-		return *getImages(), nil
+		return mo.Ok(*getImages())
 	}
 
-	stmt, err := utils.PrepareStmt(dat, "SELECT * FROM images ORDER BY id DESC")
-	if err != nil {
-		return nil, err
+	stmtRes := utils.PrepareStmt(dat, "SELECT * FROM images ORDER BY id DESC")
+	if stmtRes.IsError() {
+		return mo.Err[[]*utils.Img](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
 	rows, err := stmt.Query()
 	if err != nil {
-		return nil, err
+		return mo.Err[[]*utils.Img](err)
 	}
 	defer rows.Close()
 
@@ -166,7 +174,7 @@ func ListAllImages() ([]*utils.Img, error) {
 			&r.Created,
 			&r.Pending,
 		); err != nil {
-			return nil, err
+			return mo.Err[[]*utils.Img](err)
 		}
 
 		currentImages = setImage(r)
@@ -174,19 +182,23 @@ func ListAllImages() ([]*utils.Img, error) {
 		out = append(out, r)
 	}
 
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return mo.Err[[]*utils.Img](err)
+	}
+	return mo.Ok(out)
 }
 
-func ListPendingImages() ([]*utils.Img, error) {
-	stmt, err := utils.PrepareStmt(dat, "SELECT * FROM images WHERE pending = TRUE ORDER BY id DESC")
-	if err != nil {
-		return nil, err
+func ListPendingImages() mo.Result[[]*utils.Img] {
+	stmtRes := utils.PrepareStmt(dat, "SELECT * FROM images WHERE pending = TRUE ORDER BY id DESC")
+	if stmtRes.IsError() {
+		return mo.Err[[]*utils.Img](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
 	rows, err := stmt.Query()
 	if err != nil {
-		return nil, err
+		return mo.Err[[]*utils.Img](err)
 	}
 	defer rows.Close()
 
@@ -200,7 +212,7 @@ func ListPendingImages() ([]*utils.Img, error) {
 			&r.Created,
 			&r.Pending,
 		); err != nil {
-			return nil, err
+			return mo.Err[[]*utils.Img](err)
 		}
 
 		currentImages = setImage(r)
@@ -208,10 +220,13 @@ func ListPendingImages() ([]*utils.Img, error) {
 		out = append(out, r)
 	}
 
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return mo.Err[[]*utils.Img](err)
+	}
+	return mo.Ok(out)
 }
 
-func FilterImagesByPending(rows []*utils.Img, showPending bool) ([]*utils.Img, error) {
+func FilterImagesByPending(rows []*utils.Img, showPending bool) mo.Result[[]*utils.Img] {
 	out := make([]*utils.Img, 0)
 	for _, r := range rows {
 		if r.Pending == showPending {
@@ -219,26 +234,27 @@ func FilterImagesByPending(rows []*utils.Img, showPending bool) ([]*utils.Img, e
 		}
 	}
 
-	return out, nil
+	return mo.Ok(out)
 }
 
-func FilterImagesFromBannedUsers(rows []*utils.Img) ([]*utils.Img, error) {
+func FilterImagesFromBannedUsers(rows []*utils.Img) mo.Result[[]*utils.Img] {
 	out := make([]*utils.Img, 0)
 	for _, r := range rows {
-		user, err := GetUser(r.UserID)
-		if err != nil {
-			return nil, err
+		userRes := GetUser(r.UserID)
+		if userRes.IsError() {
+			return mo.Err[[]*utils.Img](userRes.Error())
 		}
+		user := userRes.MustGet()
 
 		if !user.Banned {
 			out = append(out, r)
 		}
 	}
 
-	return out, nil
+	return mo.Ok(out)
 }
 
-func FilterImagesByUser(rows []*utils.Img, userId uint64) ([]*utils.Img, error) {
+func FilterImagesByUser(rows []*utils.Img, userId uint64) mo.Result[[]*utils.Img] {
 	out := make([]*utils.Img, 0)
 	for _, r := range rows {
 		if r.UserID == userId {
@@ -246,18 +262,19 @@ func FilterImagesByUser(rows []*utils.Img, userId uint64) ([]*utils.Img, error) 
 		}
 	}
 
-	return out, nil
+	return mo.Ok(out)
 }
 
-func GetImage(imgId uint64) (*utils.Img, error) {
+func GetImage(imgId uint64) mo.Result[*utils.Img] {
 	if val, found := findImage(imgId); found {
-		return val, nil
+		return mo.Ok(val)
 	}
 
-	stmt, err := utils.PrepareStmt(dat, "SELECT * FROM images WHERE id = ?")
-	if err != nil {
-		return nil, err
+	stmtRes := utils.PrepareStmt(dat, "SELECT * FROM images WHERE id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[*utils.Img](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
 	row := stmt.QueryRow(imgId)
@@ -271,29 +288,30 @@ func GetImage(imgId uint64) (*utils.Img, error) {
 			&r.Pending,
 		); err != nil {
 			if err == sql.ErrNoRows {
-				return nil, err
+				return mo.Err[*utils.Img](err)
 			}
 
-			return nil, err
+			return mo.Err[*utils.Img](err)
 		}
 
 		currentImages = setImage(r)
 
-		return r, nil
+		return mo.Ok(r)
 	} else {
-		return nil, fmt.Errorf("img not found")
+		return mo.Err[*utils.Img](fmt.Errorf("img not found"))
 	}
 }
 
-func GetImageForUser(userId uint64) (*utils.Img, error) {
+func GetImageForUser(userId uint64) mo.Result[*utils.Img] {
 	if val, found := findImageFromUser(userId); found {
-		return val, nil
+		return mo.Ok(val)
 	}
 
-	stmt, err := utils.PrepareStmt(dat, "SELECT * FROM images WHERE user_id = ?")
-	if err != nil {
-		return nil, err
+	stmtRes := utils.PrepareStmt(dat, "SELECT * FROM images WHERE user_id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[*utils.Img](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
 	row := stmt.QueryRow(userId)
@@ -307,123 +325,127 @@ func GetImageForUser(userId uint64) (*utils.Img, error) {
 			&r.Pending,
 		); err != nil {
 			if err == sql.ErrNoRows {
-				return nil, err
+				return mo.Err[*utils.Img](err)
 			}
 
-			return nil, err
+			return mo.Err[*utils.Img](err)
 		}
 
 		currentImages = setImage(r)
 
-		return r, nil
+		return mo.Ok(r)
 	} else {
-		return nil, fmt.Errorf("img not found")
+		return mo.Err[*utils.Img](fmt.Errorf("img not found"))
 	}
 }
 
-// returns the owning user_id for a brand image
-func GetImageOwnerId(imgId uint64) (uint64, error) {
+func GetImageOwnerId(imgId uint64) mo.Result[uint64] {
 	if val, found := findImage(imgId); found {
-		return val.UserID, nil
+		return mo.Ok(val.UserID)
 	}
 
 	var uid uint64
 
-	stmt, err := utils.PrepareStmt(dat, "SELECT user_id FROM images WHERE id = ?")
-	if err != nil {
-		return 0, err
+	stmtRes := utils.PrepareStmt(dat, "SELECT user_id FROM images WHERE id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[uint64](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
-	err = stmt.QueryRow(imgId).Scan(&uid)
+	err := stmt.QueryRow(imgId).Scan(&uid)
 	if err != nil {
-		return 0, err
+		return mo.Err[uint64](err)
 	}
 
-	return uid, nil
+	return mo.Ok(uid)
 }
 
-func DeleteImage(imgId uint64) (*utils.Img, error) {
-	img, err := GetImage(imgId)
-	if err != nil {
-		return img, err
+func DeleteImage(imgId uint64) mo.Result[*utils.Img] {
+	imgRes := GetImage(imgId)
+	if imgRes.IsError() {
+		return mo.Err[*utils.Img](imgRes.Error())
 	}
+	img := imgRes.MustGet()
 
-	stmt, err := utils.PrepareStmt(dat, "DELETE FROM images WHERE id = ?")
-	if err != nil {
-		return img, err
+	stmtRes := utils.PrepareStmt(dat, "DELETE FROM images WHERE id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[*utils.Img](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
-	_, err = stmt.Exec(imgId)
+	_, err := stmt.Exec(imgId)
 	if err != nil {
-		return img, err
+		return mo.Err[*utils.Img](err)
 	}
 
 	adDir := filepath.Join("cdn", fmt.Sprintf("%d.webp", img.UserID))
 	err = os.Remove(adDir)
 	if err != nil {
-		return img, err
+		return mo.Err[*utils.Img](err)
 	}
 
 	currentImages = deleteImage(imgId)
 
-	return img, nil
+	return mo.Ok(img)
 }
 
 var ModCache = cache.New(24*time.Hour, 8*time.Hour)
 
-func GetModCached(modID string) (*utils.Mod, error) {
+func GetModCached(modID string) mo.Result[*utils.Mod] {
 	if modID == "" {
-		return nil, fmt.Errorf("no mod id provided")
+		return mo.Err[*utils.Mod](fmt.Errorf("no mod id provided"))
 	}
 
 	if cached, found := ModCache.Get(modID); found {
 		mod := cached.(utils.Mod)
-		return &mod, nil
+		return mo.Ok(&mod)
 	}
 
 	apiURL := fmt.Sprintf("https://api.geode-sdk.org/v1/mods/%s", modID)
 	resp, err := http.Get(apiURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch mod info: %w", err)
+		return mo.Err[*utils.Mod](fmt.Errorf("failed to fetch mod info: %w", err))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("mod API returned status %d", resp.StatusCode)
+		return mo.Err[*utils.Mod](fmt.Errorf("mod API returned status %d", resp.StatusCode))
 	}
 
 	var modReq utils.ModRequest
 	if err := json.NewDecoder(resp.Body).Decode(&modReq); err != nil {
-		return nil, fmt.Errorf("failed to decode mod API response: %w", err)
+		return mo.Err[*utils.Mod](fmt.Errorf("failed to decode mod API response: %w", err))
 	}
 
 	ModCache.Set(modID, modReq.Payload, cache.DefaultExpiration)
 
-	return &modReq.Payload, nil
+	return mo.Ok(&modReq.Payload)
 }
 
-func ResolveDevFromModID(modID string, dev string) (*utils.ModDeveloper, error) {
-	mod, err := GetModCached(modID)
-	if err != nil {
-		return nil, err
+func ResolveDevFromModID(modID string, dev string) mo.Result[*utils.ModDeveloper] {
+	modRes := GetModCached(modID)
+	if modRes.IsError() {
+		return mo.Err[*utils.ModDeveloper](modRes.Error())
 	}
+	mod := modRes.MustGet()
 
 	for _, devInfo := range mod.Developers {
 		if devInfo.IsOwner {
-			return &devInfo, nil
+			return mo.Ok(&devInfo)
 		}
 	}
 
-	return nil, fmt.Errorf("developer %s not found in mod %s", dev, modID)
+	return mo.Err[*utils.ModDeveloper](fmt.Errorf("developer %s not found in mod %s", dev, modID))
 }
 
 func init() {
-	imgs, err := ListAllImages()
-	if err != nil {
-		log.Error("Failed to initialize imgs cache: %s", err.Error())
+	imgsRes := ListAllImages()
+	if imgsRes.IsError() {
+		log.Error("Failed to initialize imgs cache: %s", imgsRes.Error())
 	} else {
+		imgs := imgsRes.MustGet()
 		currentImages = &imgs
 		log.Info("Initialized imgs cache with %d imgs", len(imgs))
 	}

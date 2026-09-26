@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -18,6 +19,7 @@ import (
 	"service/utils"
 
 	"github.com/patrickmn/go-cache"
+	"github.com/samber/mo"
 )
 
 type GitHubUser struct {
@@ -39,10 +41,15 @@ type Token struct {
 
 var sessionCache = cache.New(2*time.Hour, 10*time.Minute)
 
-func generateSessionID() (string, string, error) {
+type sessionIDs struct {
+	id   string
+	hash string
+}
+
+func generateSessionID() mo.Result[sessionIDs] {
 	b := make([]byte, 64)
 	if _, err := rand.Read(b); err != nil {
-		return "", "", err
+		return mo.Err[sessionIDs](err)
 	}
 
 	raw := base64.RawURLEncoding.EncodeToString(b)
@@ -50,7 +57,7 @@ func generateSessionID() (string, string, error) {
 	h := sha256.Sum256([]byte(raw))
 	hash := base64.RawURLEncoding.EncodeToString(h[:])
 
-	return raw, hash, nil
+	return mo.Ok(sessionIDs{id: raw, hash: hash})
 }
 
 func hashSessionID(raw string) string {
@@ -66,15 +73,16 @@ func isSecure(r *http.Request) bool {
 	return false
 }
 
-func SetSession(w http.ResponseWriter, user *GitHubUser, secure bool) (string, error) {
-	sessionId, sessionIdHash, err := generateSessionID()
-	if err != nil {
-		return "", err
+func SetSession(w http.ResponseWriter, user *GitHubUser, secure bool) mo.Result[string] {
+	idsRes := generateSessionID()
+	if idsRes.IsError() {
+		return mo.Err[string](idsRes.Error())
 	}
+	ids := idsRes.MustGet()
 
 	session := &http.Cookie{
 		Name:     "session_id",
-		Value:    sessionId,
+		Value:    ids.id,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   secure,
@@ -87,61 +95,65 @@ func SetSession(w http.ResponseWriter, user *GitHubUser, secure bool) (string, e
 		session.SameSite = http.SameSiteLaxMode
 	}
 
-	stmt, err := utils.PrepareStmt(utils.Db(), "INSERT INTO sessions (session_id, user_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE user_id = VALUES(user_id);")
-	if err != nil {
-		return "", err
+	stmtRes := utils.PrepareStmt(utils.Db(), "INSERT INTO sessions (session_id, user_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE user_id = VALUES(user_id);")
+	if stmtRes.IsError() {
+		return mo.Err[string](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
-	_, err = stmt.Exec(sessionIdHash, user.ID)
+	_, err := stmt.Exec(ids.hash, user.ID)
 	if err != nil {
-		return "", err
+		return mo.Err[string](err)
 	}
 
 	log.Debug("Setting session cookie...")
 	http.SetCookie(w, session)
 
-	sessionCache.Set(sessionIdHash, user, cache.DefaultExpiration)
+	sessionCache.Set(ids.hash, user, cache.DefaultExpiration)
 
-	return sessionIdHash, nil
+	return mo.Ok(ids.hash)
 }
 
-func GetSessionFromId(id string) (*GitHubUser, error) {
+func GetSessionFromId(id string) mo.Result[*GitHubUser] {
 	sessionId := hashSessionID(id)
 
 	if val, found := sessionCache.Get(sessionId); found {
 		if user, ok := val.(*GitHubUser); ok {
-			return user, nil
+			return mo.Ok(user)
 		}
 	}
 	var user GitHubUser
 
-	stmt, err := utils.PrepareStmt(utils.Db(), "SELECT user_id FROM sessions WHERE session_id = ?")
-	if err != nil {
-		return nil, err
+	stmtRes := utils.PrepareStmt(utils.Db(), "SELECT user_id FROM sessions WHERE session_id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[*GitHubUser](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
-	err = stmt.QueryRow(sessionId).Scan(&user.ID)
+	err := stmt.QueryRow(sessionId).Scan(&user.ID)
 	if err != nil {
-		return nil, err
+		return mo.Err[*GitHubUser](err)
 	}
 
-	updStmt, err := utils.PrepareStmt(utils.Db(), "UPDATE sessions SET last_seen = CURRENT_TIMESTAMP WHERE session_id = ?")
-	if err != nil {
-		return nil, err
+	updStmtRes := utils.PrepareStmt(utils.Db(), "UPDATE sessions SET last_seen = CURRENT_TIMESTAMP WHERE session_id = ?")
+	if updStmtRes.IsError() {
+		return mo.Err[*GitHubUser](updStmtRes.Error())
 	}
+	updStmt := updStmtRes.MustGet()
 	defer updStmt.Close()
 
 	_, err = updStmt.Exec(sessionId)
 	if err != nil {
-		return nil, err
+		return mo.Err[*GitHubUser](err)
 	}
 
-	u, err := database.GetUser(user.ID)
-	if err != nil {
-		return nil, err
+	userRes := database.GetUser(user.ID)
+	if userRes.IsError() {
+		return mo.Err[*GitHubUser](userRes.Error())
 	}
+	u := userRes.MustGet()
 
 	user.Login = u.Login
 	user.AvatarURL = u.AvatarURL
@@ -151,79 +163,89 @@ func GetSessionFromId(id string) (*GitHubUser, error) {
 	user.Banned = u.Banned
 	user.Created = u.Created
 	user.Updated = u.Updated
-	return &user, nil
+	return mo.Ok(&user)
 }
 
-func GetSessionUserID(r *http.Request) (uint64, error) {
+func GetSessionUserID(r *http.Request) mo.Result[uint64] {
 	c, err := r.Cookie("session_id")
 	if err != nil {
-		return 0, err
+		return mo.Err[uint64](err)
 	}
 
-	u, err := GetSessionFromId(c.Value)
-	if err != nil || u == nil {
-		if err == nil {
-			err = fmt.Errorf("no user in session")
-		}
-
-		return 0, err
+	userRes := GetSessionFromId(c.Value)
+	if userRes.IsError() {
+		return mo.Err[uint64](userRes.Error())
+	}
+	u := userRes.MustGet()
+	if u == nil {
+		return mo.Err[uint64](fmt.Errorf("no user in session"))
 	}
 
-	return u.ID, nil
+	return mo.Ok(u.ID)
 }
 
-func GetSession(r *http.Request) (*GitHubUser, error) {
+func GetSession(r *http.Request) mo.Result[*GitHubUser] {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		return nil, err
+		return mo.Err[*GitHubUser](err)
 	}
 
-	user, err := GetSessionFromId(cookie.Value)
-	if err != nil {
-		return nil, err
+	userRes := GetSessionFromId(cookie.Value)
+	if userRes.IsError() {
+		return mo.Err[*GitHubUser](userRes.Error())
 	}
+	user := userRes.MustGet()
 
-	return user, nil
+	return mo.Ok(user)
 }
 
-func DeleteSession(r *http.Request) (int, error) {
+type sessionDeleteError struct {
+	status int
+	err    error
+}
+
+func (e sessionDeleteError) Error() string { return e.err.Error() }
+
+func DeleteSession(r *http.Request) mo.Result[int] {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
-		return http.StatusUnauthorized, err
+		return mo.Err[int](sessionDeleteError{status: http.StatusUnauthorized, err: err})
 	}
 
-	stmt, err := utils.PrepareStmt(utils.Db(), "DELETE FROM sessions WHERE session_id = ?")
-	if err != nil {
-		return http.StatusInternalServerError, err
+	stmtRes := utils.PrepareStmt(utils.Db(), "DELETE FROM sessions WHERE session_id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[int](sessionDeleteError{status: http.StatusInternalServerError, err: stmtRes.Error()})
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
 	_, err = stmt.Exec(hashSessionID(cookie.Value))
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return mo.Err[int](sessionDeleteError{status: http.StatusInternalServerError, err: err})
 	}
 
 	sessionCache.Delete(hashSessionID((cookie.Value)))
 
-	return http.StatusOK, nil
+	return mo.Ok(http.StatusOK)
 }
 
-func CleanupExpiredSessions() error {
-	stmt, err := utils.PrepareStmt(utils.Db(), "DELETE FROM sessions WHERE last_seen < NOW() - INTERVAL 30 DAY")
-	if err != nil {
-		return err
+func CleanupExpiredSessions() mo.Result[bool] {
+	stmtRes := utils.PrepareStmt(utils.Db(), "DELETE FROM sessions WHERE last_seen < NOW() - INTERVAL 30 DAY")
+	if stmtRes.IsError() {
+		return mo.Err[bool](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
 	res, err := stmt.Exec()
 	if err != nil {
-		return err
+		return mo.Err[bool](err)
 	}
 
 	rowsAffected, _ := res.RowsAffected()
 	log.Info("Expired sessions cleaned: %d", rowsAffected)
 
-	return nil
+	return mo.Ok(true)
 }
 
 var sessionCancel context.CancelFunc
@@ -274,7 +296,6 @@ func init() {
 			return
 		}
 
-		// Fetch user info
 		req, _ = http.NewRequest(http.MethodGet, "https://api.github.com/user", nil)
 		req.Header.Set("Authorization", tokenResp.TokenType+" "+tokenResp.AccessToken)
 
@@ -292,21 +313,20 @@ func init() {
 			return
 		}
 
-		// Upsert into your DB
-		if err := database.UpsertUser(
+		upsertRes := database.UpsertUser(
 			user.ID,
 			user.Login,
 			user.AvatarURL,
-		); err != nil {
-			log.Error("Failed to upsert user: %s", err.Error())
+		)
+		if upsertRes.IsError() {
+			log.Error("Failed to upsert user: %s", upsertRes.Error())
 			http.Error(w, "Failed to upsert user", http.StatusInternalServerError)
 			return
 		}
 
-		// Set session cookie
-		_, err = SetSession(w, user, isSecure(r))
-		if err != nil {
-			log.Error("Failed to set session: %s", err.Error())
+		sessionRes := SetSession(w, user, isSecure(r))
+		if sessionRes.IsError() {
+			log.Error("Failed to set session: %s", sessionRes.Error())
 			http.Error(w, "Failed to set session", http.StatusInternalServerError)
 			return
 		}
@@ -315,10 +335,15 @@ func init() {
 	})
 
 	http.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
-		code, err := DeleteSession(r)
-		if err != nil {
+		sessionRes := DeleteSession(r)
+		if sessionRes.IsError() {
 			log.Error("Failed to log out: %s")
-			http.Error(w, "Failed to log out", code)
+			status := http.StatusInternalServerError
+			var deleteErr sessionDeleteError
+			if errors.As(sessionRes.Error(), &deleteErr) {
+				status = deleteErr.status
+			}
+			http.Error(w, "Failed to log out", status)
 			return
 		}
 
@@ -351,12 +376,13 @@ func init() {
 				log.Debug("/session request no cookie: %s", err.Error())
 			}
 
-			user, err := GetSession(r)
-			if err != nil {
-				log.Error(err.Error())
+			userRes := GetSession(r)
+			if userRes.IsError() {
+				log.Error(userRes.Error().Error())
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
+			user := userRes.MustGet()
 
 			header := w.Header()
 

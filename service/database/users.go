@@ -8,13 +8,14 @@ import (
 
 	"service/log"
 	"service/utils"
+
+	"github.com/samber/mo"
 )
 
 func newUsers() *[]*utils.User {
 	return new([]*utils.User)
 }
 
-// Current users cache
 var currentUsers *[]*utils.User = nil
 var currentUsersSince time.Time = time.Now()
 
@@ -74,23 +75,24 @@ func deleteUser(id uint64) *[]*utils.User {
 	return getUsers()
 }
 
-func GetUser(id uint64) (*utils.User, error) {
+func GetUser(id uint64) mo.Result[*utils.User] {
 	if id == 0 {
-		return nil, fmt.Errorf("empty user id")
+		return mo.Err[*utils.User](fmt.Errorf("empty user id"))
 	}
 
 	if val, found := findUser(id); found {
-		return val, nil
+		return mo.Ok(val)
 	}
 
-	stmt, err := utils.PrepareStmt(dat, "SELECT * FROM users WHERE id = ?")
-	if err != nil {
-		return nil, err
+	stmtRes := utils.PrepareStmt(dat, "SELECT * FROM users WHERE id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[*utils.User](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
 	user := new(utils.User)
-	err = stmt.QueryRow(id).Scan(
+	err := stmt.QueryRow(id).Scan(
 		&user.ID,
 		&user.Login,
 		&user.AvatarURL,
@@ -102,31 +104,32 @@ func GetUser(id uint64) (*utils.User, error) {
 		&user.Updated,
 	)
 	if err != nil {
-		return nil, err
+		return mo.Err[*utils.User](err)
 	}
 
 	currentUsers = setUser(user)
 
-	return user, nil
+	return mo.Ok(user)
 }
 
-func GetUserFromLogin(login string) (*utils.User, error) {
+func GetUserFromLogin(login string) mo.Result[*utils.User] {
 	if login == "" {
-		return nil, fmt.Errorf("empty user id")
+		return mo.Err[*utils.User](fmt.Errorf("empty user id"))
 	}
 
 	if val, found := findUserByLogin(login); found {
-		return val, nil
+		return mo.Ok(val)
 	}
 
-	stmt, err := utils.PrepareStmt(dat, "SELECT * FROM users WHERE login = ?")
-	if err != nil {
-		return nil, err
+	stmtRes := utils.PrepareStmt(dat, "SELECT * FROM users WHERE login = ?")
+	if stmtRes.IsError() {
+		return mo.Err[*utils.User](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
 	user := new(utils.User)
-	err = stmt.QueryRow(login).Scan(
+	err := stmt.QueryRow(login).Scan(
 		&user.ID,
 		&user.Login,
 		&user.AvatarURL,
@@ -138,33 +141,34 @@ func GetUserFromLogin(login string) (*utils.User, error) {
 		&user.Updated,
 	)
 	if err != nil {
-		return nil, err
+		return mo.Err[*utils.User](err)
 	}
 
 	currentUsers = setUser(user)
 
-	return user, nil
+	return mo.Ok(user)
 }
 
-func GetAllUsers() ([]*utils.User, error) {
+func GetAllUsers() mo.Result[[]*utils.User] {
 	if time.Since(currentUsersSince) > 15*time.Minute {
 		currentUsers = nil
 	}
 
 	if currentUsers != nil && len(*currentUsers) > 0 {
 		log.Debug("Returning cached imgs list")
-		return *getUsers(), nil
+		return mo.Ok(*getUsers())
 	}
 
-	stmt, err := utils.PrepareStmt(dat, "SELECT * FROM users ORDER BY id DESC")
-	if err != nil {
-		return nil, err
+	stmtRes := utils.PrepareStmt(dat, "SELECT * FROM users ORDER BY id DESC")
+	if stmtRes.IsError() {
+		return mo.Err[[]*utils.User](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
 	users, err := stmt.Query()
 	if err != nil {
-		return nil, err
+		return mo.Err[[]*utils.User](err)
 	}
 	defer users.Close()
 
@@ -182,7 +186,7 @@ func GetAllUsers() ([]*utils.User, error) {
 			&u.Created,
 			&u.Updated,
 		); err != nil {
-			return nil, err
+			return mo.Err[[]*utils.User](err)
 		}
 
 		currentUsers = setUser(u)
@@ -190,35 +194,42 @@ func GetAllUsers() ([]*utils.User, error) {
 		out = append(out, u)
 	}
 
-	return out, users.Err()
+	if err := users.Err(); err != nil {
+		return mo.Err[[]*utils.User](err)
+	}
+	return mo.Ok(out)
 }
 
-// inserts a new user or updates login if it already exists.
-func UpsertUser(id uint64, login string, avatarUrl string) error {
+func UpsertUser(id uint64, login string, avatarUrl string) mo.Result[bool] {
 	if id == 0 {
-		return fmt.Errorf("empty user id")
+		return mo.Err[bool](fmt.Errorf("empty user id"))
 	}
 
-	stmt, err := utils.PrepareStmt(dat, "INSERT INTO users (id, login, avatar_url) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE login = VALUES (login), avatar_url = VALUES (avatar_url), updated_at = CURRENT_TIMESTAMP")
-	if err != nil {
-		return err
+	stmtRes := utils.PrepareStmt(dat, "INSERT INTO users (id, login, avatar_url) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE login = VALUES (login), avatar_url = VALUES (avatar_url), updated_at = CURRENT_TIMESTAMP")
+	if stmtRes.IsError() {
+		return mo.Err[bool](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
-	_, err = stmt.Exec(id, login, avatarUrl)
-	return err
+	_, err := stmt.Exec(id, login, avatarUrl)
+	if err != nil {
+		return mo.Err[bool](err)
+	}
+	return mo.Ok(true)
 }
 
-func VerifyUser(id uint64) (*utils.User, error) {
-	stmt, err := utils.PrepareStmt(dat, "UPDATE users SET verified = TRUE WHERE id = ?")
-	if err != nil {
-		return nil, err
+func VerifyUser(id uint64) mo.Result[*utils.User] {
+	stmtRes := utils.PrepareStmt(dat, "UPDATE users SET verified = TRUE WHERE id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[*utils.User](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
-	_, err = stmt.Exec(id)
+	_, err := stmt.Exec(id)
 	if err != nil {
-		return nil, err
+		return mo.Err[*utils.User](err)
 	}
 
 	if user, found := findUser(id); found {
@@ -226,108 +237,128 @@ func VerifyUser(id uint64) (*utils.User, error) {
 		currentUsers = setUser(user)
 	}
 
-	approveStmt, err := utils.PrepareStmt(dat, "UPDATE images SET pending = FALSE WHERE user_id = ?")
-	if err != nil {
-		return nil, err
+	approveStmtRes := utils.PrepareStmt(dat, "UPDATE images SET pending = FALSE WHERE user_id = ?")
+	if approveStmtRes.IsError() {
+		return mo.Err[*utils.User](approveStmtRes.Error())
 	}
+	approveStmt := approveStmtRes.MustGet()
 	defer approveStmt.Close()
 
 	_, err = approveStmt.Exec(id)
 	if err != nil {
-		return nil, err
+		return mo.Err[*utils.User](err)
 	}
 
-	imgs, err := FilterImagesByUser(*getImages(), id)
-	if err != nil {
-		return nil, err
+	imgsRes := FilterImagesByUser(*getImages(), id)
+	if imgsRes.IsError() {
+		return mo.Err[*utils.User](imgsRes.Error())
 	}
+	imgs := imgsRes.MustGet()
 
 	for _, img := range imgs {
 		img.Pending = false
 		currentImages = setImage(img)
 	}
 
-	return GetUser(id)
+	userRes := GetUser(id)
+	if userRes.IsError() {
+		return mo.Err[*utils.User](userRes.Error())
+	}
+	user := userRes.MustGet()
+	return mo.Ok(user)
 }
 
-func StaffUser(id uint64) (*utils.User, error) {
-	stmt, err := utils.PrepareStmt(dat, "UPDATE users SET is_staff = TRUE WHERE id = ?")
-	if err != nil {
-		return nil, err
+func StaffUser(id uint64) mo.Result[*utils.User] {
+	stmtRes := utils.PrepareStmt(dat, "UPDATE users SET is_staff = TRUE WHERE id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[*utils.User](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
-	_, err = stmt.Exec(id)
+	_, err := stmt.Exec(id)
 	if err != nil {
-		return nil, err
+		return mo.Err[*utils.User](err)
 	}
 
-	return GetUser(id)
+	userRes := GetUser(id)
+	if userRes.IsError() {
+		return mo.Err[*utils.User](userRes.Error())
+	}
+	user := userRes.MustGet()
+	return mo.Ok(user)
 }
 
-func BanUser(id uint64) (*utils.User, error) {
-	// delete all images associated with the user
-	deleteImgsStmt, err := utils.PrepareStmt(dat, "SELECT * FROM images WHERE user_id = ?")
-	if err != nil {
-		return nil, err
+func BanUser(id uint64) mo.Result[*utils.User] {
+	deleteImgsStmtRes := utils.PrepareStmt(dat, "SELECT * FROM images WHERE user_id = ?")
+	if deleteImgsStmtRes.IsError() {
+		return mo.Err[*utils.User](deleteImgsStmtRes.Error())
 	}
+	deleteImgsStmt := deleteImgsStmtRes.MustGet()
 	defer deleteImgsStmt.Close()
 
 	img := new(utils.Img)
-	err = deleteImgsStmt.QueryRow(id).Scan(&img.ID, &img.UserID, &img.ImageURL, &img.Created, &img.Pending)
+	err := deleteImgsStmt.QueryRow(id).Scan(&img.ID, &img.UserID, &img.ImageURL, &img.Created, &img.Pending)
 	if err != nil {
-		return nil, err
+		return mo.Err[*utils.User](err)
 	}
 
 	imgDir := filepath.Join("cdn", fmt.Sprintf("%d.webp", img.UserID))
 	err = os.Remove(imgDir)
 	if err != nil {
-		return nil, err
+		return mo.Err[*utils.User](err)
 	}
 
-	user, err := GetUser(id)
-	if err != nil {
-		return nil, err
+	userRes := GetUser(id)
+	if userRes.IsError() {
+		return mo.Err[*utils.User](userRes.Error())
 	}
+	user := userRes.MustGet()
 
-	// ban the user
-	stmt, err := utils.PrepareStmt(dat, "UPDATE users SET banned = TRUE WHERE id = ?")
-	if err != nil {
-		return nil, err
+	stmtRes := utils.PrepareStmt(dat, "UPDATE users SET banned = TRUE WHERE id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[*utils.User](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
 	_, err = stmt.Exec(id)
 	if err != nil {
-		return nil, err
+		return mo.Err[*utils.User](err)
 	}
 
 	currentUsers = deleteUser(id)
 
-	return user, nil
+	return mo.Ok(user)
 }
 
-func UnbanUser(id uint64) (*utils.User, error) {
-	// unban the user
-	stmt, err := utils.PrepareStmt(dat, "UPDATE users SET banned = FALSE WHERE id = ?")
-	if err != nil {
-		return nil, err
+func UnbanUser(id uint64) mo.Result[*utils.User] {
+	stmtRes := utils.PrepareStmt(dat, "UPDATE users SET banned = FALSE WHERE id = ?")
+	if stmtRes.IsError() {
+		return mo.Err[*utils.User](stmtRes.Error())
 	}
+	stmt := stmtRes.MustGet()
 	defer stmt.Close()
 
-	_, err = stmt.Exec(id)
+	_, err := stmt.Exec(id)
 	if err != nil {
-		return nil, err
+		return mo.Err[*utils.User](err)
 	}
 
-	return GetUser(id)
+	userRes := GetUser(id)
+	if userRes.IsError() {
+		return mo.Err[*utils.User](userRes.Error())
+	}
+	user := userRes.MustGet()
+	return mo.Ok(user)
 }
 
 func init() {
-	users, err := GetAllUsers()
-	if err != nil {
-		log.Error("Failed to initialize users cache: %s", err.Error())
+	usersRes := GetAllUsers()
+	if usersRes.IsError() {
+		log.Error("Failed to initialize users cache: %s", usersRes.Error())
 	} else {
+		users := usersRes.MustGet()
 		currentUsers = &users
 		log.Info("Initialized users cache with %d users", len(users))
 	}

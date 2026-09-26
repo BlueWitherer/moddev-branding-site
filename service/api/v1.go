@@ -3,74 +3,25 @@ package api
 import (
 	"bytes"
 	"fmt"
-	"image"
-	"image/png"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
-
-	"golang.org/x/image/webp"
 
 	"service/database"
 	"service/log"
+	"service/utils"
 
-	gwebp "github.com/gen2brain/webp"
 	"github.com/patrickmn/go-cache"
 )
-
-var fixedUsernames = cache.New(12*time.Hour, 1*time.Hour)
-
-func getGitUsername(repoUrl string) (string, error) {
-	u, err := url.Parse(repoUrl)
-	if err != nil {
-		return "", fmt.Errorf("invalid URL: %w", err)
-	}
-
-	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
-	if len(parts) <= 0 {
-		return "", fmt.Errorf("invalid GitHub repo URL: %s", repoUrl)
-	}
-
-	return parts[0], nil
-}
-
-func writeAsPNG(w io.Writer, src io.Reader, decode func(io.Reader) (image.Image, error)) error {
-	img, err := decode(src)
-	if err != nil {
-		return fmt.Errorf("decode source image: %w", err)
-	}
-	return png.Encode(w, img)
-}
-
-func writeAsWebp(w io.Writer, src io.Reader, decode func(io.Reader) (image.Image, error)) error {
-	img, err := decode(src)
-	if err != nil {
-		return fmt.Errorf("decode source image: %w", err)
-	}
-	return gwebp.Encode(w, img, gwebp.Options{Quality: 80})
-}
-
-func decodeWebp(r io.Reader) (image.Image, error) {
-	return webp.Decode(r)
-}
-
-func decodePng(r io.Reader) (image.Image, error) {
-	return png.Decode(r)
-}
 
 func init() {
 	http.HandleFunc("/api/v1", func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("Mod Developer Branding API v1 service pinged")
 		header := w.Header()
 
-		header.Set("Access-Control-Allow-Origin", "*")
-		header.Set("Access-Control-Allow-Methods", "GET")
-		header.Set("Access-Control-Allow-Headers", "Content-Type")
-		header.Set("Content-Type", "text/plain")
+		utils.WriteHeaders(&header, http.MethodGet, false)
 
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "pong!")
@@ -80,9 +31,7 @@ func init() {
 		log.Debug("Getting developer branding image...")
 		header := w.Header()
 
-		header.Set("Access-Control-Allow-Origin", "*")
-		header.Set("Access-Control-Allow-Methods", "GET")
-		header.Set("Access-Control-Allow-Headers", "Content-Type")
+		utils.WriteHeaders(&header, http.MethodGet, false)
 
 		if r.Method == http.MethodGet {
 			header.Set("Content-Type", "image/webp")
@@ -95,40 +44,40 @@ func init() {
 			fmtParam := query.Get("fmt")
 			wantWebp := fmtParam == "webp"
 
-			user, err := database.GetUserFromLogin(dev)
+			user, err := database.GetUserFromLogin(dev).Get()
 			if err != nil {
 				log.Warn("Failed to get user: %s", err.Error())
 
 				if fixed, found := fixedUsernames.Get(dev); found {
-					user, err = database.GetUserFromLogin(fixed.(string))
+					user, err = database.GetUserFromLogin(fixed.(string)).Get()
 					if err != nil {
 						log.Error("Failed to get user: %s", err.Error())
 						http.Error(w, "Failed to get user", http.StatusNotFound)
 						return
 					}
 				} else if modId != "" {
-					mod, err := database.GetModCached(modId)
+					mod, err := database.GetModCached(modId).Get()
 					if err != nil {
 						log.Error("Failed to get mod: %v", err)
 						http.Error(w, "Failed to get mod", http.StatusNotFound)
 						return
 					}
 
-					modDev, err := database.ResolveDevFromModID(mod.ID, dev)
+					modDev, err := database.ResolveDevFromModID(mod.ID, dev).Get()
 					if err != nil {
 						log.Error("Failed to get mod developer: %v", err)
 						http.Error(w, "Failed to get mod developer", http.StatusNotFound)
 						return
 					}
 
-					user, err = database.GetUserFromLogin(modDev.Username)
+					user, err = database.GetUserFromLogin(modDev.Username).Get()
 					if err != nil {
 						log.Error("Failed to get user: %s", err.Error())
 						http.Error(w, "Failed to get user", http.StatusNotFound)
 						return
 					}
 
-					username, err := getGitUsername(mod.Links.Source)
+					username, err := getGitUsername(mod.Links.Source).Get()
 					if err != nil {
 						log.Warn("Couldn't get GitHub username from repository URL %s", modDev.Username)
 					} else if username != "" && dev != "" && username == dev {
@@ -161,7 +110,7 @@ func init() {
 					if wantWebp {
 						header.Set("Content-Type", "image/webp")
 						w.WriteHeader(http.StatusOK)
-						if err := writeAsWebp(w, bytes.NewReader(body), decodePng); err != nil {
+						if _, err := writeAsWebp(w, bytes.NewReader(body), decodePng).Get(); err != nil {
 							log.Error("Failed to convert fallback image to webp: %v", err)
 						}
 					} else {
@@ -177,7 +126,7 @@ func init() {
 			}
 
 			if user != nil {
-				img, err := database.GetImageForUser(user.ID)
+				img, err := database.GetImageForUser(user.ID).Get()
 				if err != nil {
 					log.Error("Failed to get image info: %s", err.Error())
 					http.Error(w, "Failed to get image info", http.StatusInternalServerError)
@@ -214,7 +163,7 @@ func init() {
 
 				header.Set("Content-Type", "image/png")
 				w.WriteHeader(http.StatusOK)
-				if err := writeAsPNG(w, f, decodeWebp); err != nil {
+				if _, err := writeAsPNG(w, f, decodeWebp).Get(); err != nil {
 					log.Error("Failed to convert image to png: %s", err.Error())
 				}
 				return

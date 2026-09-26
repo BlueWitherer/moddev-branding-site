@@ -16,25 +16,26 @@ func init() {
 		header := w.Header()
 
 		header.Set("Access-Control-Allow-Origin", "*")
-		header.Set("Access-Control-Allow-Methods", "GET")
+		header.Set("Access-Control-Allow-Methods", http.MethodGet)
 		header.Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if r.Method == http.MethodGet {
 			header.Set("Content-Type", "application/json")
 
-			// require login
-			uid, err := access.GetSessionUserID(r)
-			if err != nil {
+			uidRes := access.GetSessionUserID(r)
+			if uidRes.IsError() {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
+			uid := uidRes.MustGet()
 
-			u, err := database.GetUser(uid)
-			if err != nil {
-				log.Error("Failed to get user: %s", err.Error())
+			userRes := database.GetUser(uid)
+			if userRes.IsError() {
+				log.Error("Failed to get user: %s", userRes.Error())
 				http.Error(w, "Failed to get user", http.StatusInternalServerError)
 				return
 			}
+			u := userRes.MustGet()
 
 			if !u.IsAdmin && !u.IsStaff {
 				log.Error("User of ID %s is not admin or staff", u.ID)
@@ -42,13 +43,13 @@ func init() {
 				return
 			}
 
-			// Get pending images directly from database with WHERE pending != 0
-			imgList, err := database.ListPendingImages()
-			if err != nil {
-				log.Error("Failed to list pending images: %s", err.Error())
+			imgListRes := database.ListPendingImages()
+			if imgListRes.IsError() {
+				log.Error("Failed to list pending images: %s", imgListRes.Error())
 				http.Error(w, "Failed to list pending images", http.StatusInternalServerError)
 				return
 			}
+			imgList := imgListRes.MustGet()
 
 			query := r.URL.Query()
 			userStr := query.Get("user")
@@ -61,20 +62,22 @@ func init() {
 					return
 				}
 
-				imgList, err = database.FilterImagesByUser(imgList, user)
-				if err != nil {
-					log.Error("Failed to filter images by user: %s", err.Error())
+				filteredImagesRes := database.FilterImagesByUser(imgList, user)
+				if filteredImagesRes.IsError() {
+					log.Error("Failed to filter images by user: %s", filteredImagesRes.Error())
 					http.Error(w, "Failed to filter images", http.StatusInternalServerError)
 					return
 				}
+				imgList = filteredImagesRes.MustGet()
 			}
 
 			for i, img := range imgList {
-				u, err := database.GetUser(img.UserID)
-				if err != nil {
-					log.Error("Failed to get user for img %d: %s", img.ID, err.Error())
+				userRes := database.GetUser(img.UserID)
+				if userRes.IsError() {
+					log.Error("Failed to get user for img %d: %s", img.ID, userRes.Error())
 					continue
 				}
+				u := userRes.MustGet()
 				imgList[i].Login = u.Login
 			}
 
@@ -95,25 +98,26 @@ func init() {
 		header := w.Header()
 
 		header.Set("Access-Control-Allow-Origin", "*")
-		header.Set("Access-Control-Allow-Methods", "POST")
+		header.Set("Access-Control-Allow-Methods", http.MethodPost)
 		header.Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if r.Method == http.MethodPost {
 			header.Set("Content-Type", "application/json")
 
-			// require login
-			uid, err := access.GetSessionUserID(r)
-			if err != nil {
+			uidRes := access.GetSessionUserID(r)
+			if uidRes.IsError() {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
+			uid := uidRes.MustGet()
 
-			u, err := database.GetUser(uid)
-			if err != nil {
-				log.Error("Failed to get user: %s", err.Error())
+			userRes := database.GetUser(uid)
+			if userRes.IsError() {
+				log.Error("Failed to get user: %s", userRes.Error())
 				http.Error(w, "Failed to get user", http.StatusInternalServerError)
 				return
 			}
+			u := userRes.MustGet()
 
 			if !u.IsAdmin && !u.IsStaff {
 				log.Error("User of ID %s is not admin or staff", u.ID)
@@ -131,16 +135,17 @@ func init() {
 				return
 			}
 
-			img, err := database.ApproveImage(id)
-			if err != nil {
-				log.Error("Failed to approve img: %s", err.Error())
+			imgRes := database.ApproveImage(id)
+			if imgRes.IsError() {
+				log.Error("Failed to approve img: %s", imgRes.Error())
 				http.Error(w, "Failed to approve img", http.StatusInternalServerError)
 				return
 			}
+			img := imgRes.MustGet()
 
-			err = discord.WebhookAccept(img, u)
-			if err != nil {
-				log.Warn(err.Error())
+			webhookRes := discord.WebhookAccept(img, u)
+			if webhookRes.IsError() {
+				log.Warn(webhookRes.Error().Error())
 			}
 
 			w.WriteHeader(http.StatusOK)

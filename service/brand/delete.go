@@ -16,18 +16,19 @@ func init() {
 		header := w.Header()
 
 		header.Set("Access-Control-Allow-Origin", "*")
-		header.Set("Access-Control-Allow-Methods", "DELETE")
+		header.Set("Access-Control-Allow-Methods", http.MethodDelete)
 		header.Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if r.Method == http.MethodDelete {
 			header.Set("Content-Type", "application/json")
 
-			uid, err := access.GetSessionUserID(r)
-			if err != nil {
-				log.Error("Unauthorized access to /brand/delete: %s", err.Error())
+			uidRes := access.GetSessionUserID(r)
+			if uidRes.IsError() {
+				log.Error("Unauthorized access to /brand/delete: %s", uidRes.Error())
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
+			uid := uidRes.MustGet()
 
 			idStr := r.URL.Query().Get("id")
 			if idStr == "" {
@@ -41,27 +42,30 @@ func init() {
 				return
 			}
 
-			ownerid, err := database.GetImageOwnerId(id)
-			if err != nil {
-				log.Error("Failed to get image owner: %s", err.Error())
+			ownerRes := database.GetImageOwnerId(id)
+			if ownerRes.IsError() {
+				log.Error("Failed to get image owner: %s", ownerRes.Error())
 				http.Error(w, "Failed to get image owner", http.StatusInternalServerError)
 				return
 			}
+			ownerid := ownerRes.MustGet()
 
-			user, err := database.GetUser(uid)
-			if err != nil {
-				log.Error("Failed to get user: %s", err.Error())
+			userRes := database.GetUser(uid)
+			if userRes.IsError() {
+				log.Error("Failed to get user: %s", userRes.Error())
 				http.Error(w, "Failed to get user:", http.StatusInternalServerError)
 				return
 			}
+			user := userRes.MustGet()
 
 			if user.IsAdmin || user.IsStaff || ownerid == user.ID {
-				img, err := database.DeleteImage(id)
-				if err != nil {
-					log.Error("Failed to delete image: %s", err.Error())
+				imgRes := database.DeleteImage(id)
+				if imgRes.IsError() {
+					log.Error("Failed to delete image: %s", imgRes.Error())
 					http.Error(w, "Failed to delete image", http.StatusInternalServerError)
 					return
 				}
+				img := imgRes.MustGet()
 
 				log.Info("Deleted image of ID %d", img.ID)
 

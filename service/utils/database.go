@@ -8,6 +8,7 @@ import (
 	"service/log"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/samber/mo"
 )
 
 type ModLinks struct {
@@ -30,16 +31,18 @@ type ModRequest struct {
 	Payload Mod    `json:"payload"`
 }
 
-// Concurrent database connection
 var data *sql.DB
 
-// safely prepare the sql statement
-func PrepareStmt(db *sql.DB, sql string) (*sql.Stmt, error) {
+func PrepareStmt(db *sql.DB, query string) mo.Result[*sql.Stmt] {
 	if db != nil {
-		log.Debug("Preparing connection for statement %s", sql)
-		return db.Prepare(sql)
+		log.Debug("Preparing connection for statement %s", query)
+		stmt, err := db.Prepare(query)
+		if err != nil {
+			return mo.Err[*sql.Stmt](err)
+		}
+		return mo.Ok(stmt)
 	} else {
-		return nil, fmt.Errorf("database connection non-existent")
+		return mo.Err[*sql.Stmt](fmt.Errorf("database connection non-existent"))
 	}
 }
 

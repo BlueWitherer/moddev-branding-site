@@ -10,6 +10,7 @@ import (
 	"service/utils"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/samber/mo"
 )
 
 var session *discordgo.Session
@@ -24,7 +25,13 @@ const (
 	colorTertiary  = 12368721
 )
 
-func getSession(private bool) (*discordgo.Session, string, string, error) {
+type webhookCredentials struct {
+	session *discordgo.Session
+	id      string
+	token   string
+}
+
+func getSession(private bool) mo.Result[webhookCredentials] {
 	if session != nil {
 		var id string
 		var token string
@@ -32,28 +39,28 @@ func getSession(private bool) (*discordgo.Session, string, string, error) {
 		if private {
 			id = os.Getenv("DISCORD_WH_ID_STAFF")
 			if id == "" {
-				return nil, "", "", fmt.Errorf("discord staff webhook id variable is not defined!")
+				return mo.Err[webhookCredentials](fmt.Errorf("discord staff webhook id variable is not defined!"))
 			}
 
 			token = os.Getenv("DISCORD_WH_TOKEN_STAFF")
 			if token == "" {
-				return nil, "", "", fmt.Errorf("discord staff webhook token variable is not defined!")
+				return mo.Err[webhookCredentials](fmt.Errorf("discord staff webhook token variable is not defined!"))
 			}
 		} else {
 			id = os.Getenv("DISCORD_WH_ID")
 			if id == "" {
-				return nil, "", "", fmt.Errorf("discord webhook id variable is not defined!")
+				return mo.Err[webhookCredentials](fmt.Errorf("discord webhook id variable is not defined!"))
 			}
 
 			token = os.Getenv("DISCORD_WH_TOKEN")
 			if token == "" {
-				return nil, "", "", fmt.Errorf("discord webhook token variable is not defined!")
+				return mo.Err[webhookCredentials](fmt.Errorf("discord webhook token variable is not defined!"))
 			}
 		}
 
-		return session, id, token, nil
+		return mo.Ok(webhookCredentials{session: session, id: id, token: token})
 	} else {
-		return nil, "", "", fmt.Errorf("no discord session found")
+		return mo.Err[webhookCredentials](fmt.Errorf("no discord session found"))
 	}
 }
 
@@ -61,16 +68,18 @@ func getDevHyperlink(dev string) string {
 	return fmt.Sprintf("**[@%s](https://geode-sdk.org/mods?per_page=20&developer=%s&sort=recently_updated)**", dev, strings.ToLower(dev))
 }
 
-func WebhookAccept(img *utils.Img, staff *utils.User) error {
-	s, id, token, err := getSession(false)
-	if err != nil {
-		return err
+func WebhookAccept(img *utils.Img, staff *utils.User) mo.Result[bool] {
+	credentialsRes := getSession(false)
+	if credentialsRes.IsError() {
+		return mo.Err[bool](credentialsRes.Error())
 	}
+	credentials := credentialsRes.MustGet()
 
-	u, err := database.GetUser(img.UserID)
-	if err != nil {
-		return err
+	userRes := database.GetUser(img.UserID)
+	if userRes.IsError() {
+		return mo.Err[bool](userRes.Error())
 	}
+	u := userRes.MustGet()
 
 	var mod string
 	if staff != nil {
@@ -80,7 +89,7 @@ func WebhookAccept(img *utils.Img, staff *utils.User) error {
 	}
 
 	go func() {
-		_, err = s.WebhookExecute(id, token, false, &discordgo.WebhookParams{
+		_, err := credentials.session.WebhookExecute(credentials.id, credentials.token, false, &discordgo.WebhookParams{
 			Username: WebName,
 			Embeds: []*discordgo.MessageEmbed{
 				{
@@ -111,22 +120,24 @@ func WebhookAccept(img *utils.Img, staff *utils.User) error {
 		}
 	}()
 
-	return nil
+	return mo.Ok(true)
 }
 
-func WebhookStaffSubmit(img *utils.Img) error {
-	s, id, token, err := getSession(true)
-	if err != nil {
-		return err
+func WebhookStaffSubmit(img *utils.Img) mo.Result[bool] {
+	credentialsRes := getSession(true)
+	if credentialsRes.IsError() {
+		return mo.Err[bool](credentialsRes.Error())
 	}
+	credentials := credentialsRes.MustGet()
 
-	u, err := database.GetUser(img.UserID)
-	if err != nil {
-		return err
+	userRes := database.GetUser(img.UserID)
+	if userRes.IsError() {
+		return mo.Err[bool](userRes.Error())
 	}
+	u := userRes.MustGet()
 
 	go func() {
-		_, err = s.WebhookExecute(id, token, false, &discordgo.WebhookParams{
+		_, err := credentials.session.WebhookExecute(credentials.id, credentials.token, false, &discordgo.WebhookParams{
 			Username: WebName,
 			Embeds: []*discordgo.MessageEmbed{
 				{
@@ -152,7 +163,7 @@ func WebhookStaffSubmit(img *utils.Img) error {
 		}
 	}()
 
-	return nil
+	return mo.Ok(true)
 }
 
 func init() {

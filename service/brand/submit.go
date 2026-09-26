@@ -11,7 +11,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "golang.org/x/image/webp" // registers webp decoding with image.Decode
+	_ "golang.org/x/image/webp"
 
 	"service/access"
 	"service/database"
@@ -19,30 +19,31 @@ import (
 	"service/log"
 
 	"github.com/gen2brain/webp"
+	"github.com/samber/mo"
 )
 
-func convertToWebp(src io.Reader, dstPath string) error {
+func convertToWebp(src io.Reader, dstPath string) mo.Result[bool] {
 	img, _, err := image.Decode(src)
 	if err != nil {
-		return fmt.Errorf("decode image: %w", err)
+		return mo.Err[bool](fmt.Errorf("decode image: %w", err))
 	}
 
 	if err := os.MkdirAll(filepath.Dir(dstPath), os.ModePerm); err != nil {
-		return fmt.Errorf("create dir: %w", err)
+		return mo.Err[bool](fmt.Errorf("create dir: %w", err))
 	}
 
 	dst, err := os.Create(dstPath)
 	if err != nil {
-		return fmt.Errorf("create dst: %w", err)
+		return mo.Err[bool](fmt.Errorf("create dst: %w", err))
 	}
 	defer dst.Close()
 
 	if err := webp.Encode(dst, img, webp.Options{Quality: 80}); err != nil {
 		os.Remove(dstPath)
-		return fmt.Errorf("webp encode: %w", err)
+		return mo.Err[bool](fmt.Errorf("webp encode: %w", err))
 	}
 
-	return nil
+	return mo.Ok(true)
 }
 
 func init() {
@@ -50,24 +51,26 @@ func init() {
 		header := w.Header()
 
 		header.Set("Access-Control-Allow-Origin", "*")
-		header.Set("Access-Control-Allow-Methods", "POST")
+		header.Set("Access-Control-Allow-Methods", http.MethodPost)
 		header.Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if r.Method == http.MethodPost {
 			header.Set("Content-Type", "application/json")
 
-			uid, err := access.GetSessionUserID(r)
-			if err != nil {
+			uidRes := access.GetSessionUserID(r)
+			if uidRes.IsError() {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
+			uid := uidRes.MustGet()
 
-			user, err := database.GetUser(uid)
-			if err != nil {
-				log.Error("Failed to get ad owner: %s", err.Error())
+			userRes := database.GetUser(uid)
+			if userRes.IsError() {
+				log.Error("Failed to get ad owner: %s", userRes.Error())
 				http.Error(w, "Failed to get ad owner", http.StatusInternalServerError)
 				return
 			}
+			user := userRes.MustGet()
 
 			if user.Banned {
 				log.Error("User %s is banned", user.Login)
@@ -99,24 +102,26 @@ func init() {
 			fileName := fmt.Sprintf("%d.webp", uid)
 			dstPath := filepath.Join(targetDir, fileName)
 
-			if err := convertToWebp(file, dstPath); err != nil {
-				log.Error("Failed to convert image: %s", err.Error())
+			conversionRes := convertToWebp(file, dstPath)
+			if conversionRes.IsError() {
+				log.Error("Failed to convert image: %s", conversionRes.Error())
 				http.Error(w, "Failed to convert image format", http.StatusBadRequest)
 				return
 			}
 
 			imageURL := fmt.Sprintf("%s/cdn/%s", access.GetDomain(r), fileName)
-			imgID, err := database.CreateImage(uid, imageURL)
-			if err != nil {
+			imgIDRes := database.CreateImage(uid, imageURL)
+			if imgIDRes.IsError() {
 				e := os.Remove(dstPath)
 				if e != nil {
 					log.Error("Failed to delete brand image: %s", e.Error())
 				}
 
-				log.Error("Failed to create brand image row: %s", err.Error())
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Error("Failed to create brand image row: %s", imgIDRes.Error())
+				http.Error(w, imgIDRes.Error().Error(), http.StatusInternalServerError)
 				return
 			}
+			imgID := imgIDRes.MustGet()
 
 			var out struct {
 				ID       uint64 `json:"id"`
@@ -128,25 +133,27 @@ func init() {
 
 			log.Info("Saved img to %s, id=%v, user_id=%s", dstPath, imgID, uid)
 
-			img, err := database.GetImage(imgID)
-			if err != nil {
-				log.Warn(err.Error())
+			imgRes := database.GetImage(imgID)
+			if imgRes.IsError() {
+				log.Warn(imgRes.Error().Error())
 			} else {
-				err = discord.WebhookStaffSubmit(img)
-				if err != nil {
-					log.Warn(err.Error())
+				img := imgRes.MustGet()
+				webhookRes := discord.WebhookStaffSubmit(img)
+				if webhookRes.IsError() {
+					log.Warn(webhookRes.Error().Error())
 				}
 			}
 
 			if user.IsAdmin || user.IsStaff || user.Verified {
-				newImg, err := database.ApproveImage(imgID)
-				if err != nil {
-					log.Error("Failed to auto-approve new img by verified user: %s", err.Error())
+				approvedImageRes := database.ApproveImage(imgID)
+				if approvedImageRes.IsError() {
+					log.Error("Failed to auto-approve new img by verified user: %s", approvedImageRes.Error())
 				} else {
+					newImg := approvedImageRes.MustGet()
 					log.Info("Auto-approved img %s (%v) by verified user %s (%s)", newImg.ImageURL, newImg.ID, user.Login, user.ID)
-					err = discord.WebhookAccept(img, nil)
-					if err != nil {
-						log.Warn(err.Error())
+					webhookRes := discord.WebhookAccept(newImg, nil)
+					if webhookRes.IsError() {
+						log.Warn(webhookRes.Error().Error())
 					}
 				}
 			}

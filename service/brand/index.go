@@ -13,7 +13,7 @@ func init() {
 		header := w.Header()
 
 		header.Set("Access-Control-Allow-Origin", "*")
-		header.Set("Access-Control-Allow-Methods", "GET")
+		header.Set("Access-Control-Allow-Methods", http.MethodGet)
 		header.Set("Access-Control-Allow-Headers", "Content-Type")
 		header.Set("Content-Type", "text/plain")
 
