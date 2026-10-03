@@ -1,4 +1,4 @@
-# [<img src="https://raw.githubusercontent.com/BlueWitherer/ModDevBranding/refs/heads/main/logo.png" width="25" alt="Mod Developer Branding's logo." />](https://geode-sdk.org/mods/cheeseworks.moddevbranding) Mod Dev Branding Site
+# [<img src="https://raw.githubusercontent.com/BlueWitherer/ModDevBranding/refs/heads/master/logo.png" width="25" alt="Mod Developer Branding's logo." />](https://geode-sdk.org/mods/cheeseworks.moddevbranding) Mod Dev Branding Site
 Manage your Geode developer branding.
 
 ---
